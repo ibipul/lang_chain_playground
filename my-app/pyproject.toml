@@ -22,6 +22,7 @@ langchain-openai = "^0.1.0"
 # CRITICAL FIX: Must be ^0.2.0 or higher to be compatible with langchain-core ^0.2.x
 langchain = "^0.2.0" 
 langserve = "^0.0.50"
+langsmith = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]
 # FIX: Relaxing constraint to "*" to allow Poetry to find any version compatible with langserve ^0.0.50
