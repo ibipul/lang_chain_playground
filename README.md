@@ -18,7 +18,8 @@ Setup a REST API with langchain serve
  - `http://127.0.0.1:8000/my-app/playground` to get a default chat interface
 
 
-### Start with a virtual environment
+### Develop with a virtual environment
+ - Switch into top-level directory
  - python3 -m venv .venv (create a venv)
  - add export PIP_INDEX_URL=https://pypi.org/simple/ to the end of .venv/bin/activate
  - add export PIP_EXTRA_INDEX_URL="" to the end of .venv/bin/activate
