@@ -2,7 +2,7 @@
 name = "my-language"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["ibipul <islam.bipul@gmail.com>"]
 readme = "README.md"
 packages = [
     { include = "app" },
@@ -11,13 +11,19 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.11"
 uvicorn = "^0.23.2"
-langserve = {extras = ["server"], version = ">=0.0.30"}
-pydantic = ">2"
-my-app = {path = "packages/my-app", develop = true}
+# Set to the compatible version
+langserve = {extras = ["server"], version = "^0.3.0"} 
+# REMOVE Pydantic = ">1" if the LangChain dependencies handle Pydantic V2
+# OR set it explicitly to V2: pydantic = "^2.0" 
+pydantic = "^2.0" 
+
+# Check the path of your local package reference
+my-assistant = {path = "/Users/bislam/lang_chain_learn/my-language/packages/my-assistant", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]
-langchain-cli = ">=0.0.15"
+# FIX THE BROKEN CLI
+langchain-cli = ">=0.0.30"
 
 [build-system]
 requires = ["poetry-core"]

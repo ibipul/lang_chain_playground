@@ -1,5 +1,5 @@
 import langsmith
-from my_app.chain import chain 
+from my_assistant.chain import chain 
 
 from datetime import datetime
 

@@ -1,6 +1,0 @@
-__pycache__ # Python virtual environment
-.venv
-# other common ignored files
-__pycache__
-*.pyc
-
