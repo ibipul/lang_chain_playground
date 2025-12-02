@@ -17,3 +17,11 @@ Setup a REST API with langchain serve
  - `http://127.0.0.1:8000/docs` to see all the API endpoints
  - `http://127.0.0.1:8000/my-app/playground` to get a default chat interface
 
+
+### Start with a virtual environment
+ - python3 -m venv .venv (create a venv)
+ - add export PIP_INDEX_URL=https://pypi.org/simple/ to the end of .venv/bin/activate
+ - add export PIP_EXTRA_INDEX_URL="" to the end of .venv/bin/activate
+ - activate venv: source .venv/bin/activate
+ - Then switch to `my-app` directory and do `poetry install`
+ - Similarly switch to `my-language` directory and do a `poetry install`
