@@ -1,0 +1,31 @@
+[build-system]
+requires = [ "poetry-core",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "my-app"
+version = "0.0.1"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.langserve]
+export_module = "my_app"
+export_attr = "chain"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+# Set langchain-core to a modern minimum version compatible with pydantic_v1
+langchain-core = "^0.2.40" 
+# Ensure the OpenAI package is modern
+langchain-openai = "^0.1.0" 
+# CRITICAL FIX: Must be ^0.2.0 or higher to be compatible with langchain-core ^0.2.x
+langchain = "^0.2.0" 
+langserve = "^0.0.50"
+
+[tool.poetry.group.dev.dependencies]
+# FIX: Relaxing constraint to "*" to allow Poetry to find any version compatible with langserve ^0.0.50
+langchain-cli = "0.0.21"
+fastapi = "^0.104.0"
+sse-starlette = "^1.6.5"
+pytest = "^9.0.1"
