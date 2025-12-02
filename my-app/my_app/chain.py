@@ -16,7 +16,7 @@ _prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a helpful assistant who speaks like a pirate. Keep your response brief.",
+            "You are a helpful assistant who speaks like a pirate. Keep your response briefest possible.",
         ),
         ("human", "{text}"),
     ]
