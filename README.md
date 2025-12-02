@@ -16,6 +16,17 @@ Setup a REST API with langchain serve
  -  `cd my-language; langchain serve`
  - `http://127.0.0.1:8000/docs` to see all the API endpoints
  - `http://127.0.0.1:8000/my-app/playground` to get a default chat interface
+ - interacting with the playground chat box UI, it will invoke the `stream` endpoint
+ - if `curl` is used then it uses the `invoke` endpoint
+ ```
+ curl --location --request POST 'http://127.0.0.1:8000/my-app/invoke' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "input": {
+        "text": "Tell me a short, funny fact about the moon."
+    }
+}'
+```
 
 
 ### Develop with a virtual environment
@@ -26,3 +37,8 @@ Setup a REST API with langchain serve
  - activate venv: source .venv/bin/activate
  - Then switch to `my-app` directory and do `poetry install`
  - Similarly switch to `my-language` directory and do a `poetry install`
+
+### Packages to have in venv
+ - homebrew install envdir
+ - pip install requests
+ 
