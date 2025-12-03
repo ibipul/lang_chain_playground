@@ -11,10 +11,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.11"
 uvicorn = "^0.23.2"
-# Set to the compatible version
 langserve = {extras = ["server"], version = "^0.3.0"} 
-# REMOVE Pydantic = ">1" if the LangChain dependencies handle Pydantic V2
-# OR set it explicitly to V2: pydantic = "^2.0" 
 pydantic = "^2.0" 
 
 # Check the path of your local package reference
