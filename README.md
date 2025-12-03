@@ -23,9 +23,18 @@ Setup a REST API with langchain serve. It serves a RAG bases assistant, which sp
 --header 'Content-Type: application/json' \
 --data-raw '{
     "input": {
-        "text": "Tell me a short, funny fact about the moon."
+        "question": "Hello, Anthony does the world feel like it is against you?",
+        "character": "Mark Anthony",
+        "title": "Julius Caesar",
+        "personality": "sullen mood, rhetorical, sarcastic, and dramatic"
     }
 }'
+```
+Reponse:
+```
+Oh, how astute of you to notice! Indeed, it feels as though the very world conspires against me, drowning me in a sea of treachery and deceit. The nightmare of statistics haunts my every step, twisting reality into a cruel game of numbers. But fear not, for I shall rise above this adversity with the fire of vengeance burning in my heart!
+
+[Mood: Defiant]
 ```
 
 
