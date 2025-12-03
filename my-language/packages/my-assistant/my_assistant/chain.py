@@ -9,7 +9,7 @@ from langchain_community.vectorstores import FAISS
 
 from pydantic import BaseModel, Field
 from operator import itemgetter
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 #moderation hack
 from langchain_core.runnables import RunnableLambda, RunnableBranch, RunnablePassthrough
@@ -64,7 +64,10 @@ vectorstore = FAISS.from_texts(
 # 3. Retriver object to fetch relevant knowledge
 retriever = vectorstore.as_retriever()
 
-
+# 4. Helper function to format retrieved documents
+def format_docs(docs: List) -> str:
+    """Formats a list of Document objects into a clean, single string."""
+    return "\n\n".join(doc.page_content for doc in docs)
 
 
 _prompt = ChatPromptTemplate.from_messages(
@@ -92,7 +95,7 @@ _model = ChatOpenAI(temperature=0.5)
 # }
 
 _chain = RunnablePassthrough.assign(
-                context = itemgetter("question") | retriever   
+                context = itemgetter("question") | retriever  |format_docs
         )| _prompt | _model| StrOutputParser()
 
 chain =(
