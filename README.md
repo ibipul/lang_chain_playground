@@ -40,5 +40,8 @@ Setup a REST API with langchain serve. It serves a RAG bases assistant, which sp
 
 ### Packages to have in venv
  - homebrew install envdir
+ - You can use envdir to load secrects like API_KEYS in .envrc
+ - add `.venv`, `.envrc` in `.gitignore` to ensure not uploading your open AI keys to public
  - pip install requests
+
  
