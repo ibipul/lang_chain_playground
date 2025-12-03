@@ -9,7 +9,7 @@ A simple prompt|model response chain
  - ensure poetry dependencies are resolved
 
 ### my-language
-Setup a REST API with langchain serve
+Setup a REST API with langchain serve. It serves a RAG bases assistant, which speaks like Mark Anthony in rhetorics and shakespearean tongues, and has an context of George Orwell, it is designed to say pessimistic stuff.
  - `langchain app new my-language --package $PWD/my-assistant` 
  - `add_routes(app, my_app_chain, path="/assistant")`
  -  ensure poetry dependencied are resolved
