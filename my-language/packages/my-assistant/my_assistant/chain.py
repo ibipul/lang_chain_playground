@@ -20,7 +20,7 @@ class StrInput(BaseModel):
     """Input schema for the Mark Anthony a Shakespearean Assistant chain."""
     question: str = Field(
         ...,
-        description="The message to be translated into Mark Anthony'sspeech.",
+        description="The message to be translated into Mark Anthony's speech.",
         examples=["Hello, how are you today, friend?"],
     )
 
