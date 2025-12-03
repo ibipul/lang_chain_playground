@@ -4,8 +4,8 @@ from langserve import add_routes
 
 # 1. my chain
 from my_assistant.chain import chain as my_assistant_chain
-# 2. StrInput schema
-from my_assistant.chain import StrInput
+# 2. Input schema
+from my_assistant.chain import DynamicAssistantInput
 
 app = FastAPI(
     title="Mark Anthony Assistant Service",
@@ -16,7 +16,7 @@ app = FastAPI(
 async def redirect_root_to_playground():
     return RedirectResponse("/assistant/playground")
 
-add_routes(app, my_assistant_chain, path="/assistant",input_type=StrInput)
+add_routes(app, my_assistant_chain, path="/assistant",input_type=DynamicAssistantInput)
 
 
 if __name__ == "__main__":

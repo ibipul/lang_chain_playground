@@ -5,7 +5,12 @@ from datetime import datetime
 
 def test_chain_basic():
     # -- basic invocation of chain --#
-    input_data = {"question": "Hello, Anthony does the world feel like it is against you?"}
+    input_data = {
+        "question": "Hello, Anthony does the world feel like it is against you?",
+        "character": "Mark Anthony",
+        "title": "Julius Caesar",
+        "personality": "sullen mood, rhetorical, sarcastic, and dramatic"
+    }
     result = chain.invoke(input_data)
     print(result)
 

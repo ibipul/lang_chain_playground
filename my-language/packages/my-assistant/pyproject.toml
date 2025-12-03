@@ -9,9 +9,9 @@ description = ""
 authors = []
 readme = "README.md"
 
-[tool.langserve]
+[tool.langserve] #<<-- update if you update chain tool name or module
 export_module = "my_assistant"
-export_attr = "chain"
+export_attr = "chain" 
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
@@ -26,3 +26,5 @@ langchain-community = "^0.4.1"
 fastapi = "^0.104.0"
 sse-starlette = "^1.6.5"
 pytest = "^9.0.1"
+typer = "^0.20.0"
+click = "^8.3.1"

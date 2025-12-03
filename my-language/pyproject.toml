@@ -23,7 +23,7 @@ my-assistant = {path = "/Users/bislam/lang_chain_learn/my-language/packages/my-a
 
 [tool.poetry.group.dev.dependencies]
 # FIX THE BROKEN CLI
-langchain-cli = ">=0.0.30"
+langchain-cli = ">=0.0.37"
 
 [build-system]
 requires = ["poetry-core"]
