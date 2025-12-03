@@ -10,16 +10,16 @@ A simple prompt|model response chain
 
 ### my-language
 Setup a REST API with langchain serve
- - `langchain app new my-language --package $PWD/my-app` 
- - `add_routes(app, my_app_chain, path="/my-app")`
+ - `langchain app new my-language --package $PWD/my-assistant` 
+ - `add_routes(app, my_app_chain, path="/assistant")`
  -  ensure poetry dependencied are resolved
  -  `cd my-language; langchain serve`
  - `http://127.0.0.1:8000/docs` to see all the API endpoints
- - `http://127.0.0.1:8000/my-app/playground` to get a default chat interface
+ - `http://127.0.0.1:8000/assistant/playground` to get a default chat interface
  - interacting with the playground chat box UI, it will invoke the `stream` endpoint
  - if `curl` is used then it uses the `invoke` endpoint
  ```
- curl --location --request POST 'http://127.0.0.1:8000/my-app/invoke' \
+ curl --location --request POST 'http://127.0.0.1:8000/assistant/invoke' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "input": {

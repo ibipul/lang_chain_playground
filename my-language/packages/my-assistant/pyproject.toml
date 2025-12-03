@@ -20,6 +20,7 @@ langchain = "^1.0.0"
 langchain-openai = "^1.1.0" 
 langserve = "^0.3.0"
 langsmith = "^0.4.0" 
+langchain-community = "^0.4.1"
 
 [tool.poetry.group.dev.dependencies]
 fastapi = "^0.104.0"
