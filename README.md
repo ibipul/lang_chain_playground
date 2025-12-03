@@ -1,6 +1,15 @@
 # Hands-on  langchain
 
-For this project I created a virtual environment in the root directory, and did everything inside it.
+Requirements:
+```
+python = ">=3.10,<4.0"
+langchain-core = "^1.0.0" 
+langchain = "^1.0.0"
+langchain-openai = "^1.1.0" 
+langserve = "^0.3.0"
+langsmith = "^0.4.0" 
+langchain-community = "^0.4.1"
+```
 
 ### my-app
 A simple prompt|model response chain
@@ -56,12 +65,16 @@ Oh, how astute of you to notice! Indeed, it feels as though the very world consp
 
 ### Installation & troubleshooting
  - Create your virtual env inside the main cloned directory activate it
+ - update your langchan/langsmith API_KEYS in .envrc (with apt gitignore)
+   - you need to set `direnv allow` when the system prompts you.
  - navigate to `my-language/packages/my-assistant`
    - Do a `poetry lock`, `poetry install`
  - Navigate back out to `../..` to `my-language`
    - do another `poetry lock`, and then `poetry install`
- - update your langchan/langsmith API_KEYS in .envrc (with apt gitignore)
- - you need to set `direnv allow` when the system prompts you.
  - From `/my-language` launch with `langchain serve`
+   - If you might face random errors at `langchain serve` start
+   - `pip install --upgrade typer click`, apparently this is because of some issue with typer.
+  
+Pretty straight forward python dependency debugging
 
  
