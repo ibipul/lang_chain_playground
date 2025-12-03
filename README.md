@@ -9,7 +9,7 @@ A simple prompt|model response chain
  - ensure poetry dependencies are resolved
 
 ### my-language
-Setup a REST API with langchain serve. It serves a RAG bases assistant, which speaks like Mark Anthony in rhetorics and shakespearean tongues, and has an context of George Orwell, it is designed to say pessimistic stuff.
+Setup a REST API with langchain serve. It serves a RAG based assistant, which roleplays any character from any book/play, with a personality cue, and has an context of George Orwell. It can say pessimistic stuff, if you ask it to!
  - `langchain app new my-language --package $PWD/my-assistant` 
  - `add_routes(app, my_app_chain, path="/assistant")`
  -  ensure poetry dependencied are resolved
@@ -52,5 +52,16 @@ Oh, how astute of you to notice! Indeed, it feels as though the very world consp
  - You can use envdir to load secrects like API_KEYS in .envrc
  - add `.venv`, `.envrc` in `.gitignore` to ensure not uploading your open AI keys to public
  - pip install requests
+ - you will need poetry
+
+### Installation & troubleshooting
+ - Create your virtual env inside the main cloned directory activate it
+ - navigate to `my-language/packages/my-assistant`
+   - Do a `poetry lock`, `poetry install`
+ - Navigate back out to `../..` to `my-language`
+   - do another `poetry lock`, and then `poetry install`
+ - update your langchan/langsmith API_KEYS in .envrc (with apt gitignore)
+ - you need to set `direnv allow` when the system prompts you.
+ - From `/my-language` launch with `langchain serve`
 
  
