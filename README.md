@@ -62,32 +62,19 @@ Other ways to use it while it runs:
 
 </details>
 
-The sections below describe the two sub-projects, and [Develop with direnv](#develop-with-direnv) covers working on the code.
-
-### Shared versions
-
-All projects (`my-app`, `my-assistant`, `my-language`) pin the same LangChain stack, in a block marked `# Shared LangChain stack` in each `pyproject.toml`:
-```
-python = ">=3.11,<4.0"
-langchain-core = "^1.6.12"
-langchain = "^1.4.6"
-langchain-openai = "^1.7.2"
-langsmith = "^0.14.11"
-langserve = "^0.3.3"
-```
-Their three `poetry.lock` files agree on every package they have in common (LangChain 1.4.6, langchain-core 1.6.12, langchain-openai 1.7.2, LangSmith 0.14.11, LangServe 0.3.3, FastAPI 0.156.5, Uvicorn 0.54.0, Pydantic 2.14.1), so everything runs from one venv. `my-assistant` also uses `langchain-community` 0.4.2 for FAISS. To upgrade, see [Changing dependencies](#changing-dependencies).
+The sections below describe the two sub-projects. [Development](#development) covers working on the code.
 
 ### my-app
 A simple prompt|model response chain
  - `langchain template new my-app` 
  - needs OpenAI api key (get your own)
- - ensure poetry dependencies are resolved
+ - installed into the shared `.venv` by `./run.sh --install` (see [Development](#development))
 
 ### my-language
 Setup a REST API with langchain serve. It serves a RAG based assistant, which roleplays any character from any book/play, with a personality cue, and has an context of George Orwell. It can say pessimistic stuff, if you ask it to!
  - `langchain app new my-language --package $PWD/my-assistant` 
  - `add_routes(app, my_app_chain, path="/assistant")`
- -  ensure poetry dependencied are resolved
+ - installed into the shared `.venv` by `./run.sh` or `./run.sh --install`
  -  `cd my-language; langchain serve`
  - `http://127.0.0.1:8000/docs` to see all the API endpoints
  - `http://127.0.0.1:8000/assistant/playground` to get a default chat interface
@@ -113,11 +100,34 @@ Oh, how astute of you to notice! Indeed, it feels as though the very world consp
 ```
 
 
-## Develop with direnv
+## Development
 
 `./run.sh` is all you need to try the demo. This section is for working on the code: editing the chains, running tests, adding packages, or starting the server by hand with `langchain serve`.
 
-[direnv](https://direnv.net/) loads a folder's settings when you `cd` into it and unloads them when you leave. Here it loads your keys from `.env`, puts the project's own `python`, `poetry`, `langchain` and `pytest` first on your PATH, and points Poetry at the project venv. You never run `source .venv/bin/activate` or export keys by hand.
+All three projects share **one virtual environment**, `.venv` at the repo root, and pin the same versions, so there's nothing to switch between.
+
+### How the projects fit together
+
+| Folder | What it is | How it gets into `.venv` | Test |
+|---|---|---|---|
+| `my-language/` | The LangServe app (`app/server.py`) that serves the assistant at `/assistant` | `poetry install` in `my-language` | `langchain serve`, then the playground |
+| `my-language/packages/my-assistant/` | The Mark Anthony role-play chain: RAG over `orwell_facts.txt` with FAISS, a word filter, and a mood tag | Installed by `my-language` as a path dependency (editable, so code changes show up without reinstalling) | `pytest` |
+| `my-app/` | A small standalone chain that answers like a pirate | `poetry install` in `my-app` | `pytest` |
+
+Each folder has its own `pyproject.toml` and `poetry.lock`, but all of them install into the same `.venv`.
+
+### Shared versions
+
+Every `pyproject.toml` has the same block, marked `# Shared LangChain stack`:
+```
+python = ">=3.11,<4.0"
+langchain-core = "^1.6.12"
+langchain = "^1.4.6"
+langchain-openai = "^1.7.2"
+langsmith = "^0.14.11"
+langserve = "^0.3.3"
+```
+The three `poetry.lock` files agree on every package they have in common: LangChain 1.4.6, langchain-core 1.6.12, langchain-openai 1.7.2, LangSmith 0.14.11, LangServe 0.3.3, FastAPI 0.156.5, Uvicorn 0.54.0, Pydantic 2.14.1. `my-assistant` also uses `langchain-community` 0.4.2 for FAISS. `./run.sh --install` checks that the locks still agree and lists any package that doesn't.
 
 ### One-time setup
 
@@ -128,47 +138,44 @@ cp .env.example .env        # then add your OPENAI_API_KEY (see Quick start)
 
 `./run.sh --install` sets everything up and exits without starting the server:
 
-1. Installs Poetry into `.poetry`, and `my-language` plus its dev tools (`langchain-cli`, `pytest`) into `.venv`.
-2. Installs `my-app` into the same `.venv`, and checks that the three lock files agree on every shared package. If they don't, it lists each package and its versions.
-3. Sets up direnv:
+1. Installs Poetry into `.poetry`, then `my-language` (with `my-assistant`) and its dev tools (`langchain-cli`, `pytest`, `typer`) into `.venv`.
+2. Installs `my-app` into the same `.venv`, and checks that the three lock files agree.
+3. Sets up [direnv](https://direnv.net/):
    - If direnv is missing, offers to install it with Homebrew (otherwise see https://direnv.net/docs/installation.html).
    - Offers to add direnv's hook line to `~/.zshrc` or `~/.bashrc`. Nothing is changed unless you answer `y`.
    - Copies `.envrc.example` to `.envrc` (an existing `.envrc` is left alone), then runs `direnv allow`.
 
 Open a new terminal afterwards so the shell hook takes effect, then `cd` into the repo. You should see `direnv: loading .../.envrc`.
 
-### What gets loaded
-
-The repo-level `.envrc` applies in every folder below it (`my-language/`, `my-language/packages/my-assistant/`, `my-app/`). Everywhere, you get the one `.venv` (LangChain 1.4.6), `poetry install` / `poetry add` install into it, and your keys from `.env` (`OPENAI_API_KEY`, optional `LANGSMITH_*`) are loaded.
+From then on, in the repo or any folder inside it, direnv loads your keys from `.env` (`OPENAI_API_KEY`, optional `LANGSMITH_*`), puts `.venv`'s `python`, `langchain`, `pytest` and `.poetry`'s `poetry` first on your PATH, and points Poetry at `.venv`. When you `cd` out, it unloads them. You never run `source .venv/bin/activate` or export keys by hand.
 
 ### Everyday commands
 
 From the repo root:
 
 ```bash
-cd my-language && langchain serve           # http://127.0.0.1:8000/assistant/playground/  (Ctrl+C to stop)
+cd my-language && langchain serve                # http://127.0.0.1:8000/assistant/playground/  (Ctrl+C to stop)
 cd my-language/packages/my-assistant && pytest   # calls OpenAI once with the Mark Anthony question
-cd my-app && pytest                         # the pirate chain
+cd my-app && pytest                              # calls OpenAI once with the pirate chain
 ```
+
+`langchain serve` watches `my-language/` (which includes `packages/my-assistant/`) and reloads when you save a file, so edits to `my_assistant/chain.py` take effect without a restart.
 
 ### Changing dependencies
 
-All projects share one `.venv`, so keep versions the same everywhere. After any change, run `./run.sh --install`: it installs everything and warns, package by package, if the three lock files disagree.
+Keep every version the same across projects. After any change, run `./run.sh --install`; it installs everything and warns, package by package, if the lock files disagree.
 
-- **Upgrading the shared LangChain stack:** edit the `# Shared LangChain stack` block the same way in all three `pyproject.toml` files, then re-lock all three from the repo root:
+- **A package for one project:** `poetry add <package>` in that project's folder. For `my-assistant`, also re-lock `my-language` so the app picks it up:
+  ```bash
+  cd my-language/packages/my-assistant && poetry add <package>
+  cd ../.. && poetry lock && poetry install
+  ```
+- **A package more than one project uses:** add it with the same version constraint in each.
+- **Upgrading the shared LangChain stack:** change the `# Shared LangChain stack` block the same way in all three `pyproject.toml` files, then re-lock all three from the repo root:
   ```bash
   for d in my-language/packages/my-assistant my-app my-language; do (cd $d && poetry lock --regenerate); done
   ./run.sh --install
   ```
-- **my-language** (the LangServe app): `cd my-language && poetry add <package>`
-- **my-assistant** (the chain the app serves) installs through `my-language`:
-  ```bash
-  cd my-language/packages/my-assistant && poetry add --lock <package>   # updates its lock only
-  cd ../.. && poetry lock && poetry install                             # back in my-language
-  ```
-- **my-app**: `cd my-app && poetry add <package>`
-
-If you add a package that more than one project uses, give it the same version constraint in each.
 
 `./run.sh` reinstalls packages by itself whenever `my-language/poetry.lock` changes.
 
@@ -176,11 +183,11 @@ If you add a package that more than one project uses, give it the same version c
 
 `.env` and `.envrc` are in `.gitignore` (in every folder) and must never be committed. Only the templates are tracked: `.env.example` and `.envrc.example`. Neither holds keys. Put keys only in `.env`, never in `.envrc`.
 
-To change direnv settings for yourself, edit your `.envrc` and run `direnv allow` again. direnv blocks a changed `.envrc` until you approve it. To change them for everyone, edit the `.example` template and commit that.
+To change direnv settings for yourself, edit your `.envrc` and run `direnv allow` again. direnv blocks a changed `.envrc` until you approve it. To change them for everyone, edit `.envrc.example` and commit that.
 
 ### Without direnv
 
-Do by hand what `.envrc` does, in each new terminal:
+Do by hand what `.envrc` does, once per terminal, from the repo root:
 
 ```bash
 source .venv/bin/activate
@@ -192,7 +199,9 @@ export PATH="$PWD/.poetry/bin:$PATH" POETRY_VIRTUALENVS_CREATE=false
 
 | You see | What to do |
 |---|---|
-| `direnv: error .envrc is blocked` | Run `direnv allow` in that folder. |
+| `direnv: error .envrc is blocked` | Run `direnv allow` in the repo root. |
 | Nothing loads when you `cd` in | The shell hook is missing. Add `eval "$(direnv hook zsh)"` (or `bash`) to your shell config and open a new terminal. |
 | `poetry: command not found` / `no .venv yet` | Run `./run.sh --install`. |
 | `OPENAI_API_KEY` not set | Check `.env` exists in the repo root and has the key, then `direnv reload`. |
+| `Lock files disagree` from `./run.sh --install` | A dependency change reached only some projects. Match the version constraints, re-lock all three (see [Changing dependencies](#changing-dependencies)), then rerun. |
+| `my-app/.envrc is no longer needed` | Left over from an older setup: delete `my-app/.envrc` and `my-app/.venv`. |
