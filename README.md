@@ -1,5 +1,17 @@
 # Hands-on  langchain
 
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![LangChain 1.1.0](https://img.shields.io/badge/LangChain-1.1.0-1C3C3C?logo=langchain&logoColor=white)](https://python.langchain.com/)
+[![LangServe 0.3.3](https://img.shields.io/badge/LangServe-0.3.3-1C3C3C?logo=langchain&logoColor=white)](https://github.com/langchain-ai/langserve)
+[![LangSmith 0.4.50](https://img.shields.io/badge/LangSmith-0.4.50-1C3C3C?logo=langchain&logoColor=white)](https://smith.langchain.com/)
+[![OpenAI GPT-3.5 Turbo](https://img.shields.io/badge/OpenAI-GPT--3.5%20Turbo%20%2B%20Embeddings-412991)](https://platform.openai.com/docs/models)
+[![FAISS](https://img.shields.io/badge/FAISS-vector%20store-0467DF?logo=meta&logoColor=white)](https://github.com/facebookresearch/faiss)
+[![FastAPI 0.123.4](https://img.shields.io/badge/FastAPI-0.123.4-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Uvicorn 0.23.2](https://img.shields.io/badge/Uvicorn-0.23.2-499848?logo=gunicorn&logoColor=white)](https://www.uvicorn.org/)
+[![Pydantic 2.12.5](https://img.shields.io/badge/Pydantic-2.12.5-E92063?logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
+[![Poetry](https://img.shields.io/badge/Poetry-dependency%20management-60A5FA?logo=poetry&logoColor=white)](https://python-poetry.org/)
+[![Docker](https://img.shields.io/badge/Docker-python%3A3.11--slim-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+
 Requirements:
 ```
 python = ">=3.10,<4.0"
