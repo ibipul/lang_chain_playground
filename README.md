@@ -66,7 +66,10 @@ Other ways to use it while it runs:
 
 The repo holds three small Python projects. All of them use the same versions and run from one virtual environment, `.venv`, at the repo root.
 
-- **`my-language/`**: the web server. It's a [LangServe](https://github.com/langchain-ai/langserve) app (FastAPI underneath) that publishes one chain at `/assistant`, with a chat playground, a REST API and API docs. This is what `./run.sh` starts.
+- **`my-language/`**: the web server. It's a [LangServe](https://github.com/langchain-ai/langserve) app (FastAPI underneath) that publishes the assistant under `/assistant`. This is what `./run.sh` starts. Once it's running you get:
+  - **http://localhost:8000/assistant/playground/**: an interactive web interface for the assistant. Type a question, optionally change the character, title and personality, and read the in-character reply with its mood tag. `./run.sh` opens this page for you.
+  - **`/assistant/invoke`** and **`/assistant/stream`**: the REST API behind it, for `curl` or your own code (example under [my-language](#my-language)).
+  - **http://localhost:8000/docs**: API docs listing every endpoint.
 - **`my-language/packages/my-assistant/`**: the chain that server publishes, the Mark Anthony role-play assistant. For each question it:
   1. blocks a short list of swear words
   2. looks up related lines in `orwell_facts.txt` (a small FAISS vector store built with OpenAI embeddings when the server starts)
@@ -76,7 +79,7 @@ The repo holds three small Python projects. All of them use the same versions an
 
 ```mermaid
 flowchart LR
-    U["Browser playground<br/>or curl"] -->|"HTTP :8000/assistant"| S
+    U["Web playground<br/>/assistant/playground<br/>or curl /assistant/invoke"] -->|"HTTP :8000"| S
 
     subgraph ML["my-language: LangServe app"]
         S["app/server.py<br/>FastAPI + add_routes"]
