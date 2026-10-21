@@ -66,16 +66,16 @@ Other ways to use it while it runs:
 
 The repo holds three small Python projects. They share one list of dependencies and run from one virtual environment, `.venv`, at the repo root.
 
-- **`my-language/`**: the web server. It's a [LangServe](https://github.com/langchain-ai/langserve) app (FastAPI underneath) that publishes the assistant under `/assistant`. This is what `./run.sh` starts. Once it's running you get:
+- **`my-language/`** ([README](my-language/README.md)): the web server. It's a [LangServe](https://github.com/langchain-ai/langserve) app (FastAPI underneath) that publishes the assistant under `/assistant`. This is what `./run.sh` starts. Once it's running you get:
   - **http://localhost:8000/assistant/playground/**: an interactive web interface for the assistant. Type a question, optionally change the character, title and personality, and read the in-character reply with its mood tag. `./run.sh` opens this page for you.
   - **`/assistant/invoke`** and **`/assistant/stream`**: the REST API behind it, for `curl` or your own code (example under [my-language](#my-language)).
   - **http://localhost:8000/docs**: API docs listing every endpoint.
-- **`my-language/packages/my-assistant/`**: the chain that server publishes, the Mark Anthony role-play assistant. For each question it:
+- **`my-language/packages/my-assistant/`** ([README](my-language/packages/my-assistant/README.md)): the chain that server publishes, the Mark Anthony role-play assistant. For each question it:
   1. blocks a short list of swear words
   2. looks up related lines in `orwell_facts.txt` (a small FAISS vector store built with OpenAI embeddings when the server starts)
   3. asks the chat model to answer in character, using those lines as context
   4. asks the model a second time to name the reply's mood, and appends `[Mood: …]`
-- **`my-app/`**: a separate, even smaller chain (a prompt and a model) that answers like a pirate. Nothing serves it; you run it through its test.
+- **`my-app/`** ([README](my-app/README.md)): the first demo, an even smaller chain (a prompt and a model) that answers like a pirate. Its idea of giving the model a character grew into `my-assistant`. Nothing serves it; you run it through its test.
 
 ```mermaid
 flowchart LR
@@ -193,73 +193,7 @@ Commit `pyproject.toml` and `poetry.lock` together. Never add dependencies to th
 
 ### Add your own chain
 
-A chain is a small Python package with a `chain.py` that defines a variable named `chain`. The quickest start is to copy `my-app`, the smallest one. This example adds `my-poet`, which writes a haiku about a topic, and serves it next to the assistant.
-
-**1. Copy and rename.** Put chains you want served under `my-language/packages/`:
-
-```bash
-cp -R my-app my-language/packages/my-poet
-cd my-language/packages/my-poet
-mv my_app my_poet
-```
-
-In its `pyproject.toml`, change `my-app` to `my-poet` and `my_app` to `my_poet` (in `name`, `packages` and `export_module`), and update `description`. In `tests/test_chain.py`, change the import to `from my_poet.chain import chain`, and give the test an input that matches your chain.
-
-**2. Write the chain** in `my_poet/chain.py`. Keep the `.env` lines at the top, and end with a variable named `chain`. Declaring the input with `.with_types(...)` gives the playground a proper form:
-
-```python
-from dotenv import find_dotenv, load_dotenv
-
-load_dotenv(find_dotenv())
-
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field
-
-
-class PoetInput(BaseModel):
-    topic: str = Field(..., description="What the haiku is about.", examples=["autumn rain"])
-
-
-_prompt = ChatPromptTemplate.from_messages([("system", "Write one haiku about the topic."), ("human", "{topic}")])
-
-chain = (_prompt | ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7) | StrOutputParser()).with_types(input_type=PoetInput)
-```
-
-**3. Register it** in the root `pyproject.toml`, from the repo root:
-
-```bash
-poetry add --editable ./my-language/packages/my-poet
-```
-
-That adds `my-poet = {path = "my-language/packages/my-poet", develop = true}` to the root `pyproject.toml`, updates `poetry.lock` and installs it. If the chain needs a library the repo doesn't have yet, `poetry add <package>` it here too.
-
-**4. Serve it.** In `my-language/app/server.py`, import it and add a route next to the existing one:
-
-```python
-from my_poet.chain import chain as my_poet_chain
-
-add_routes(app, my_poet_chain, path="/poet")
-```
-
-**5. Try it.** Run `pytest` in `my-language/packages/my-poet`, then `cd my-language && langchain serve` and open http://127.0.0.1:8000/poet/playground/. The assistant stays at `/assistant/playground/`.
-
-For a chain you only want to run, not serve (like `my-app`), skip step 4. It can live in its own top-level folder; then also add a `COPY <folder> ./<folder>` line to the `Dockerfile`, which copies only `my-language/` and `my-app/`.
-
-**What to update, at a glance:**
-
-| File | Change |
-|---|---|
-| `<chain folder>/pyproject.toml` | Package name, `packages` include, `export_module`, description. No dependencies. |
-| `<chain folder>/<module>/chain.py` | Your chain, ending in a variable named `chain`. |
-| `<chain folder>/tests/test_chain.py` | Import path and test input. |
-| Root `pyproject.toml` and `poetry.lock` | Done for you by `poetry add --editable ./<chain folder>`; commit both. |
-| `my-language/app/server.py` | Import and `add_routes(...)`, only if the chain should be served. |
-| `Dockerfile` | Only for a new top-level folder: a `COPY` line. |
-| `README.md` | Optional: describe the chain under [How the repo fits together](#how-the-repo-fits-together). |
-
-**Reusing someone else's template:** copy its folder the same way, move its dependencies into the root `pyproject.toml`, and update it to LangChain 1.x (for example, `langchain_core.pydantic_v1` becomes `pydantic`). Don't use `langchain app add`. It downloads from LangChain's old template collection, which was removed from LangChain's main branch and pins LangChain 0.1. It also writes the dependency into the wrong `pyproject.toml` for this layout.
+To add a chain (an app) next to `my-assistant`, serve it from `my-language`, and see which files to update, follow the step-by-step guide in [my-language/README.md](my-language/README.md#add-your-own-chain).
 
 ### Run in Docker
 
