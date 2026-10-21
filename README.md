@@ -12,6 +12,58 @@
 [![Poetry](https://img.shields.io/badge/Poetry-dependency%20management-60A5FA?logo=poetry&logoColor=white)](https://python-poetry.org/)
 [![Docker](https://img.shields.io/badge/Docker-python%3A3.11--slim-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
+## Quick start
+
+Runs the **my-language** demo: a LangServe REST API with a chat playground where you talk to a character from a book or play (Mark Anthony from *Julius Caesar* by default), backed by a small George Orwell knowledge base.
+
+Needs Python 3.11+, internet access and an OpenAI API key. You don't need Poetry installed; `run.sh` sets it up.
+
+```bash
+git clone https://github.com/ibipul/lang_chain_playground.git
+cd lang_chain_playground
+```
+
+> [!IMPORTANT]
+> **Add your OpenAI API key before the first run.** The repo doesn't include one.
+>
+> 1. Create a key at https://platform.openai.com/api-keys (the API needs credits on your OpenAI account).
+> 2. Copy the template: `cp .env.example .env`
+> 3. Open `.env` and replace `PASTE_YOUR_OPENAI_KEY_HERE` with your key:
+>    ```
+>    OPENAI_API_KEY=sk-...your-key...
+>    ```
+>
+> `.env` is listed in `.gitignore`, so git won't commit your key. Don't put the key in `.env.example` or anywhere else that's tracked. LangSmith tracing is optional; fill in the `LANGSMITH_*` lines in `.env` to turn it on.
+
+Then start the app:
+
+```bash
+./run.sh
+```
+
+`run.sh` walks through five numbered steps: check Python, install Poetry and the packages (first run only, into `.poetry` and `.venv`), check the API key with OpenAI, find a free port, start the server. When it prints **● Ready: http://localhost:8000/assistant/playground/** it opens the chat playground in your browser. Keep that terminal open; press Ctrl+C there to stop.
+
+Other ways to use it while it runs:
+- API docs: http://localhost:8000/docs
+- Call it from the terminal with the `curl` example in [my-language](#my-language) below.
+- `PORT=9000 ./run.sh` uses a fixed port. `NO_BROWSER=1 ./run.sh` skips opening the browser.
+
+<details>
+<summary><b>Quick Troubleshooting</b> (click to show)</summary>
+
+| You see | What it means / what to do |
+|---|---|
+| `Python 3.11 or newer is required` | Install Python 3.11+, or point to one: `PYTHON=/path/to/python3.11 ./run.sh` |
+| `Missing .env` / `No API key in .env` | Do the key steps in the box above. |
+| `OpenAI rejected the key (HTTP 401)` | The key is wrong or was deleted. Create a new one and paste it into `.env`. |
+| `Package install failed` | Usually a network problem. Run `./run.sh` again; if it keeps failing, delete `.venv` and retry. |
+| `The server stopped during startup` | Read the error above it. A `429` / `insufficient_quota` error means your OpenAI account has no credits left. |
+| `An earlier run of this app is already serving ...` | It's already running; use that URL, or stop it first. |
+
+</details>
+
+The sections below describe the two sub-projects and the manual setup with Poetry.
+
 Requirements:
 ```
 python = ">=3.10,<4.0"

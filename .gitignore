@@ -1,6 +1,9 @@
-__pycache__ # Python virtual environment
+__pycache__
+# Python virtual environment
 .venv
 # other common ignored files
 *.pyc
 .envrc
 .DS_Store
+.env
+.poetry

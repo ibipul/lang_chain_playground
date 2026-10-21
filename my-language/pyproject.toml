@@ -14,8 +14,8 @@ uvicorn = "^0.23.2"
 langserve = {extras = ["server"], version = "^0.3.0"} 
 pydantic = "^2.0" 
 
-# Check the path of your local package reference
-my-assistant = {path = "/Users/bislam/lang_chain_learn/my-language/packages/my-assistant", develop = true}
+# Local package, relative to this folder
+my-assistant = {path = "packages/my-assistant", develop = true}
 
 
 [tool.poetry.group.dev.dependencies]
