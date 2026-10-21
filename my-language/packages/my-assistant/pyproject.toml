@@ -1,34 +1,20 @@
-[build-system]
-requires = [ "poetry-core",]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry]
+# Package metadata only, so this folder installs as a Python package.
+# Dependencies live in the repo-root pyproject.toml, not here.
+[project]
 name = "my-assistant"
 version = "0.0.1"
-description = ""
-authors = []
+description = "Mark Anthony role-play chain, served by my-language at /assistant"
 readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
 
-[tool.langserve] #<<-- update if you update chain tool name or module
+[tool.poetry]
+packages = [{ include = "my_assistant" }]
+
+[tool.langserve]
 export_module = "my_assistant"
-export_attr = "chain" 
+export_attr = "chain"
 
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-# Shared LangChain stack: keep this block identical in my-app, my-assistant and my-language
-langchain-core = "^1.6.12"
-langchain = "^1.4.6"
-langchain-openai = "^1.7.2"
-langsmith = "^0.14.11"
-python-dotenv = "^1.2.4"
-langserve = "^0.3.3"
-langchain-community = "^0.4.2"
-faiss-cpu = "^1.12.0"
-
-[tool.poetry.group.dev.dependencies]
-# Same versions my-language resolves, so every project's lock agrees
-fastapi = "^0.156.5"
-sse-starlette = "^1.8.2"
-pytest = "^9.0.1"
-typer = "^0.20.0"
-click = "^8.3.1"
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"

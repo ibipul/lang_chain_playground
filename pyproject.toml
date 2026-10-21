@@ -1,0 +1,31 @@
+# The only file in this repo that lists dependencies. The poetry.lock next to it pins every
+# version, and everything installs into one venv (.venv). See "Development" in README.md.
+[tool.poetry]
+# The root only holds dependencies; it isn't a package itself.
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+# LangChain stack
+langchain-core = "^1.6.12"
+langchain = "^1.4.6"
+langchain-openai = "^1.7.2"
+langchain-community = "^0.4.2"   # FAISS vector store, used by my-assistant
+langsmith = "^0.14.11"
+# Web server (my-language)
+langserve = {extras = ["server"], version = "^0.3.3"}
+uvicorn = "^0.54.0"
+pydantic = "^2.0"
+# Used by the chains
+faiss-cpu = "^1.12.0"
+python-dotenv = "^1.2.4"
+
+# This repo's own chains, installed from their folders in editable mode
+my-assistant = {path = "my-language/packages/my-assistant", develop = true}
+my-app = {path = "my-app", develop = true}
+
+[tool.poetry.group.dev.dependencies]
+langchain-cli = ">=0.0.37"   # provides `langchain serve`
+# langchain-cli allows typer 0.9, which breaks on click 8.2+ and lacks rich
+typer = "^0.20.0"
+pytest = "^9.0.1"

@@ -1,0 +1,8 @@
+# Keep keys and local environments out of the image. Pass keys at run time: docker run --env-file .env ...
+.env
+.envrc
+.venv
+.poetry
+.git
+**/__pycache__
+**/.pytest_cache

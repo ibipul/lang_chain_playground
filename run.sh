@@ -3,7 +3,7 @@
 # Sets up Python and Poetry, installs dependencies, checks the OpenAI key, starts the server.
 # Usage: ./run.sh                 (opens http://localhost:8000/assistant/playground, or the next free port)
 #        PORT=9000 ./run.sh       (use exactly this port)
-#        ./run.sh --install       (developer setup: dev tools and my-app in .venv; doesn't start the server)
+#        ./run.sh --install       (developer setup: also installs dev tools; doesn't start the server)
 set -uo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
@@ -15,7 +15,7 @@ case "${1:-}" in
   --install) INSTALL=1 ;;
   *) echo "Usage: ./run.sh [--install]"; exit 1 ;;
 esac
-STEPS=5; [ -n "$INSTALL" ] && STEPS=3
+STEPS=5; [ -n "$INSTALL" ] && STEPS=2
 
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
@@ -46,11 +46,12 @@ if [ ! -x .venv/bin/python ]; then
   echo "  Creating a virtual environment in .venv ..."
   "$PY" -m venv .venv || die "Could not create the virtual environment. Delete the .venv folder and run ./run.sh again."
 fi
-if [ ! -f .venv/.deps-installed ] || [ my-language/poetry.lock -nt .venv/.deps-installed ]; then
+# One pyproject.toml + poetry.lock at the repo root install everything into .venv.
+poetry_install() { VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false "$ROOT/.poetry/bin/poetry" install --no-interaction "$@"; }
+if [ ! -f .venv/.deps-installed ] || [ poetry.lock -nt .venv/.deps-installed ]; then
   echo "  Installing packages (first run only; usually 1-3 minutes, longer on a slow network)."
   echo
-  (cd my-language && VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false \
-    "$ROOT/.poetry/bin/poetry" install --only main --no-interaction) \
+  poetry_install --only main \
     || die "Package install failed (see Poetry's message above). Check your internet connection and run ./run.sh again. If it keeps failing, delete the .venv folder and retry."
   touch .venv/.deps-installed
   echo
@@ -60,30 +61,9 @@ else
 fi
 
 if [ -n "$INSTALL" ]; then
-  # Dev tools (langchain-cli, pytest) for my-language, then my-app into the same .venv.
-  echo "  Installing dev tools for my-language ..."
-  (cd my-language && VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false \
-    "$ROOT/.poetry/bin/poetry" install --no-interaction) \
-    || die "Dev tool install failed (see Poetry's message above). Run ./run.sh --install again."
-  ok "my-language: packages and dev tools in .venv"
-
-  say "[3/$STEPS] Setting up my-app (same .venv) and checking versions match"
-  (cd my-app && VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false \
-    "$ROOT/.poetry/bin/poetry" install --no-interaction) \
-    || die "my-app install failed (see Poetry's message above). Run ./run.sh --install again."
-  ok "my-app: installed in .venv"
-  # All projects share one .venv, so their three lock files must agree on every package they have in common.
-  .venv/bin/python - <<'PYEOF' || warn "Lock files disagree (listed above). Run 'poetry lock --regenerate' in my-language/packages/my-assistant, my-app and my-language, then ./run.sh --install again."
-import tomllib, sys
-locks = {"my-language": "my-language/poetry.lock", "my-assistant": "my-language/packages/my-assistant/poetry.lock", "my-app": "my-app/poetry.lock"}
-v = {n: {p["name"]: p["version"] for p in tomllib.load(open(f, "rb"))["package"]} for n, f in locks.items()}
-bad = sorted({p for a in v for b in v for p in v[a].keys() & v[b].keys() if v[a][p] != v[b][p]})
-for p in bad:
-    print(f"  \033[33m!\033[0m {p}: " + ", ".join(f"{n} {v[n][p]}" for n in v if p in v[n]))
-if bad:
-    sys.exit(1)
-print(f"  \033[32m✓\033[0m Lock files agree (LangChain {v['my-language']['langchain']}, langchain-core {v['my-language']['langchain-core']})")
-PYEOF
+  echo "  Installing dev tools (langchain-cli, pytest) ..."
+  poetry_install || die "Dev tool install failed (see Poetry's message above). Run ./run.sh --install again."
+  ok "Packages and dev tools installed in .venv"
   # Link the project's Poetry into .venv/bin, so `source .venv/bin/activate` puts poetry on PATH too.
   ln -sf "$ROOT/.poetry/bin/poetry" .venv/bin/poetry && ok "poetry linked into .venv/bin"
 

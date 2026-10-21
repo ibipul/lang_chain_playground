@@ -6,7 +6,7 @@
 [![LangSmith 0.14.11](https://img.shields.io/badge/LangSmith-0.14.11-1C3C3C?logo=langchain&logoColor=white)](https://smith.langchain.com/)
 [![OpenAI GPT-3.5 Turbo](https://img.shields.io/badge/OpenAI-GPT--3.5%20Turbo%20%2B%20Embeddings-412991)](https://platform.openai.com/docs/models)
 [![FAISS](https://img.shields.io/badge/FAISS-vector%20store-0467DF?logo=meta&logoColor=white)](https://github.com/facebookresearch/faiss)
-[![FastAPI 0.156.5](https://img.shields.io/badge/FastAPI-0.156.5-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![FastAPI 0.156.6](https://img.shields.io/badge/FastAPI-0.156.6-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Uvicorn 0.54.0](https://img.shields.io/badge/Uvicorn-0.54.0-499848?logo=gunicorn&logoColor=white)](https://www.uvicorn.org/)
 [![Pydantic 2.14.1](https://img.shields.io/badge/Pydantic-2.14.1-E92063?logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
 [![Poetry](https://img.shields.io/badge/Poetry-dependency%20management-60A5FA?logo=poetry&logoColor=white)](https://python-poetry.org/)
@@ -64,7 +64,7 @@ Other ways to use it while it runs:
 
 ## How the repo fits together
 
-The repo holds three small Python projects. All of them use the same versions and run from one virtual environment, `.venv`, at the repo root.
+The repo holds three small Python projects. They share one list of dependencies and run from one virtual environment, `.venv`, at the repo root.
 
 - **`my-language/`**: the web server. It's a [LangServe](https://github.com/langchain-ai/langserve) app (FastAPI underneath) that publishes the assistant under `/assistant`. This is what `./run.sh` starts. Once it's running you get:
   - **http://localhost:8000/assistant/playground/**: an interactive web interface for the assistant. Type a question, optionally change the character, title and personality, and read the in-character reply with its mood tag. `./run.sh` opens this page for you.
@@ -103,7 +103,7 @@ flowchart LR
     E -.-> MP
 ```
 
-Each folder has its own `pyproject.toml` and `poetry.lock` (managed with [Poetry](https://python-poetry.org/)). `my-language` lists `my-assistant` as a local dependency, so installing `my-language` installs the assistant too, in editable mode (code changes apply without reinstalling).
+All dependencies are listed in **one `pyproject.toml` at the repo root**, and **one `poetry.lock`** next to it pins every version (managed with [Poetry](https://python-poetry.org/)). The root file also installs `my-assistant` and `my-app` from their folders, in editable mode: Python uses the code in the folders directly, so your edits apply without reinstalling. Those two folders keep a small `pyproject.toml` that only names the package, with no dependencies.
 
 ## Project notes
 
@@ -144,7 +144,7 @@ Oh, how astute of you to notice! Indeed, it feels as though the very world consp
 
 ## Development
 
-`./run.sh` is all you need to try the demo. This section is for working on the code: editing the chains, running tests, adding packages, or starting the server by hand.
+`./run.sh` is all you need to try the demo. This section is for working on the code: editing the chains, running tests, adding packages or new chains, or starting the server by hand.
 
 ### Setup
 
@@ -153,7 +153,7 @@ cp .env.example .env        # then add your OPENAI_API_KEY (see Quick start)
 ./run.sh --install
 ```
 
-`./run.sh --install` sets everything up and exits without starting the server. It installs Poetry into `.poetry`, then installs `my-language` (with `my-assistant`), `my-app` and the dev tools (`langchain-cli`, `pytest`) into `.venv`. It also checks that the three lock files agree and links `poetry` into `.venv/bin`.
+`./run.sh --install` installs Poetry into `.poetry`, then everything in the root `pyproject.toml`, including the dev tools (`langchain-cli`, `pytest`), into `.venv`. It also links `poetry` into `.venv/bin`, then exits without starting the server.
 
 Then, in each new terminal, activate the venv from the repo root:
 
@@ -161,7 +161,7 @@ Then, in each new terminal, activate the venv from the repo root:
 source .venv/bin/activate
 ```
 
-That puts the project's `python`, `poetry`, `langchain` and `pytest` first on your PATH. Your key doesn't need exporting: both chains read `.env` from the repo root when they load. A variable already set in your shell takes precedence over `.env`.
+That puts the project's `python`, `poetry`, `langchain` and `pytest` first on your PATH. Your key doesn't need exporting: the chains read `.env` from the repo root when they load. A variable already set in your shell takes precedence over `.env`.
 
 ### Everyday commands
 
@@ -173,39 +173,104 @@ cd my-language/packages/my-assistant && pytest   # calls OpenAI once with the Ma
 cd my-app && pytest                              # calls OpenAI once with the pirate chain
 ```
 
-`langchain serve` watches `my-language/` (which includes `packages/my-assistant/`) and reloads when you save a file, so edits to `my_assistant/chain.py` take effect without a restart.
+`langchain serve` watches `my-language/` (which includes `packages/`) and reloads when you save a file, so edits to a chain take effect without a restart.
 
-### Shared versions
+### Dependencies
 
-Every `pyproject.toml` has the same block, marked `# Shared LangChain stack`:
+Everything is in the root `pyproject.toml`; the locked versions are in the root `poetry.lock`. Main versions today: LangChain 1.4.6, langchain-core 1.6.12, langchain-openai 1.7.2, langchain-community 0.4.2, LangSmith 0.14.11, LangServe 0.3.3, FastAPI 0.156.6, Uvicorn 0.54.0, Pydantic 2.14.1.
+
+Run Poetry from the repo root, with the venv active:
+
+| To | Run |
+|---|---|
+| Add a package | `poetry add <package>` |
+| Add a dev-only tool | `poetry add --group dev <package>` |
+| Remove a package | `poetry remove <package>` |
+| Upgrade within the allowed versions | `poetry update` (or `poetry update <package>`) |
+| Allow a newer major/minor version | Edit its line in `pyproject.toml`, then `poetry lock && poetry install` |
+
+Commit `pyproject.toml` and `poetry.lock` together. Never add dependencies to the `pyproject.toml` inside `my-app/` or `my-assistant/`; those only name the package. `./run.sh` reinstalls by itself whenever `poetry.lock` changes, so after a `git pull` it picks up others' changes.
+
+### Add your own chain
+
+A chain is a small Python package with a `chain.py` that defines a variable named `chain`. The quickest start is to copy `my-app`, the smallest one. This example adds `my-poet`, which writes a haiku about a topic, and serves it next to the assistant.
+
+**1. Copy and rename.** Put chains you want served under `my-language/packages/`:
+
+```bash
+cp -R my-app my-language/packages/my-poet
+cd my-language/packages/my-poet
+mv my_app my_poet
 ```
-python = ">=3.11,<4.0"
-langchain-core = "^1.6.12"
-langchain = "^1.4.6"
-langchain-openai = "^1.7.2"
-langsmith = "^0.14.11"
-python-dotenv = "^1.2.4"
-langserve = "^0.3.3"
+
+In its `pyproject.toml`, change `my-app` to `my-poet` and `my_app` to `my_poet` (in `name`, `packages` and `export_module`), and update `description`. In `tests/test_chain.py`, change the import to `from my_poet.chain import chain`, and give the test an input that matches your chain.
+
+**2. Write the chain** in `my_poet/chain.py`. Keep the `.env` lines at the top, and end with a variable named `chain`. Declaring the input with `.with_types(...)` gives the playground a proper form:
+
+```python
+from dotenv import find_dotenv, load_dotenv
+
+load_dotenv(find_dotenv())
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
+
+
+class PoetInput(BaseModel):
+    topic: str = Field(..., description="What the haiku is about.", examples=["autumn rain"])
+
+
+_prompt = ChatPromptTemplate.from_messages([("system", "Write one haiku about the topic."), ("human", "{topic}")])
+
+chain = (_prompt | ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7) | StrOutputParser()).with_types(input_type=PoetInput)
 ```
-The three `poetry.lock` files agree on every package they have in common: LangChain 1.4.6, langchain-core 1.6.12, langchain-openai 1.7.2, LangSmith 0.14.11, LangServe 0.3.3, FastAPI 0.156.5, Uvicorn 0.54.0, Pydantic 2.14.1. `my-assistant` also uses `langchain-community` 0.4.2 for FAISS.
 
-### Changing dependencies
+**3. Register it** in the root `pyproject.toml`, from the repo root:
 
-Keep every version the same across projects. After any change, run `./run.sh --install`; it installs everything and warns, package by package, if the lock files disagree.
+```bash
+poetry add --editable ./my-language/packages/my-poet
+```
 
-- **A package for one project:** `poetry add <package>` in that project's folder. For `my-assistant`, also re-lock `my-language` so the app picks it up:
-  ```bash
-  cd my-language/packages/my-assistant && poetry add <package>
-  cd ../.. && poetry lock && poetry install
-  ```
-- **A package more than one project uses:** add it with the same version constraint in each.
-- **Upgrading the shared LangChain stack:** change the `# Shared LangChain stack` block the same way in all three `pyproject.toml` files, then re-lock all three from the repo root:
-  ```bash
-  for d in my-language/packages/my-assistant my-app my-language; do (cd $d && poetry lock --regenerate); done
-  ./run.sh --install
-  ```
+That adds `my-poet = {path = "my-language/packages/my-poet", develop = true}` to the root `pyproject.toml`, updates `poetry.lock` and installs it. If the chain needs a library the repo doesn't have yet, `poetry add <package>` it here too.
 
-`./run.sh` reinstalls packages by itself whenever `my-language/poetry.lock` changes.
+**4. Serve it.** In `my-language/app/server.py`, import it and add a route next to the existing one:
+
+```python
+from my_poet.chain import chain as my_poet_chain
+
+add_routes(app, my_poet_chain, path="/poet")
+```
+
+**5. Try it.** Run `pytest` in `my-language/packages/my-poet`, then `cd my-language && langchain serve` and open http://127.0.0.1:8000/poet/playground/. The assistant stays at `/assistant/playground/`.
+
+For a chain you only want to run, not serve (like `my-app`), skip step 4. It can live in its own top-level folder; then also add a `COPY <folder> ./<folder>` line to the `Dockerfile`, which copies only `my-language/` and `my-app/`.
+
+**What to update, at a glance:**
+
+| File | Change |
+|---|---|
+| `<chain folder>/pyproject.toml` | Package name, `packages` include, `export_module`, description. No dependencies. |
+| `<chain folder>/<module>/chain.py` | Your chain, ending in a variable named `chain`. |
+| `<chain folder>/tests/test_chain.py` | Import path and test input. |
+| Root `pyproject.toml` and `poetry.lock` | Done for you by `poetry add --editable ./<chain folder>`; commit both. |
+| `my-language/app/server.py` | Import and `add_routes(...)`, only if the chain should be served. |
+| `Dockerfile` | Only for a new top-level folder: a `COPY` line. |
+| `README.md` | Optional: describe the chain under [How the repo fits together](#how-the-repo-fits-together). |
+
+**Reusing someone else's template:** copy its folder the same way, move its dependencies into the root `pyproject.toml`, and update it to LangChain 1.x (for example, `langchain_core.pydantic_v1` becomes `pydantic`). Don't use `langchain app add`. It downloads from LangChain's old template collection, which was removed from LangChain's main branch and pins LangChain 0.1. It also writes the dependency into the wrong `pyproject.toml` for this layout.
+
+### Run in Docker
+
+The `Dockerfile` at the repo root builds the LangServe app. Keys are passed at run time and never copied into the image (`.dockerignore` excludes `.env`):
+
+```bash
+docker build -t lang-chain-playground .
+docker run --env-file .env -p 8080:8080 lang-chain-playground
+```
+
+Then open http://localhost:8080/assistant/playground/.
 
 ### Keep your key out of git
 
@@ -217,4 +282,5 @@ Keep every version the same across projects. After any change, run `./run.sh --i
 |---|---|
 | `poetry: command not found` / `langchain: command not found` | Activate the venv: `source .venv/bin/activate`. If `.venv` doesn't exist yet, run `./run.sh --install`. |
 | `OpenAIError: Missing credentials` | `.env` is missing or has no `OPENAI_API_KEY`. See the key box in Quick start. |
-| `Lock files disagree` from `./run.sh --install` | A dependency change reached only some projects. Match the version constraints, re-lock all three (see [Changing dependencies](#changing-dependencies)), then rerun. |
+| `ModuleNotFoundError` for your new chain | It isn't registered yet: `poetry add --editable ./<chain folder>` from the repo root. |
+| `pyproject.toml changed significantly since poetry.lock was last generated` | Someone edited `pyproject.toml` without re-locking. Run `poetry lock && poetry install`. |

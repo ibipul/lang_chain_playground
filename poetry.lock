@@ -529,14 +529,14 @@ packaging = "*"
 
 [[package]]
 name = "fastapi"
-version = "0.156.5"
+version = "0.156.6"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 optional = false
 python-versions = ">=3.10"
 groups = ["main", "dev"]
 files = [
-    {file = "fastapi-0.156.5-py3-none-any.whl", hash = "sha256:5f448ea9941c3be211f2a6f6e1e6cb2bf4886bf4191f8d623b1c70bcb2ce0b04"},
-    {file = "fastapi-0.156.5.tar.gz", hash = "sha256:eff248c39b8512f9a192d7a682c6c972c0d42f209c21a5616a3919dc3162d2c4"},
+    {file = "fastapi-0.156.6-py3-none-any.whl", hash = "sha256:5c27f77aa3866fd4e2faf961ba549f4890a22b7eaa5399308d7db6403be80b91"},
+    {file = "fastapi-0.156.6.tar.gz", hash = "sha256:d9c4e30de45331f0b76004d058698994dc86a263244462dcd698da38ebf7c8c8"},
 ]
 
 [package.dependencies]
@@ -1617,28 +1617,32 @@ files = [
 ]
 
 [[package]]
-name = "my-assistant"
+name = "my-app"
 version = "0.0.1"
-description = ""
+description = "A small chain that answers like a pirate"
 optional = false
-python-versions = ">=3.11,<4.0"
+python-versions = ">=3.11"
 groups = ["main"]
 files = []
 develop = true
 
-[package.dependencies]
-faiss-cpu = "^1.12.0"
-langchain = "^1.4.6"
-langchain-community = "^0.4.2"
-langchain-core = "^1.6.12"
-langchain-openai = "^1.7.2"
-langserve = "^0.3.3"
-langsmith = "^0.14.11"
-python-dotenv = "^1.2.4"
+[package.source]
+type = "directory"
+url = "my-app"
+
+[[package]]
+name = "my-assistant"
+version = "0.0.1"
+description = "Mark Anthony role-play chain, served by my-language at /assistant"
+optional = false
+python-versions = ">=3.11"
+groups = ["main"]
+files = []
+develop = true
 
 [package.source]
 type = "directory"
-url = "packages/my-assistant"
+url = "my-language/packages/my-assistant"
 
 [[package]]
 name = "numpy"
@@ -3813,4 +3817,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "f5ed75ce5f275db41f4aaef5460d800a299f48e80bd0d02b4712ec285187272d"
+content-hash = "d176a71fd929db443f8f0e8e18c23209be731709e7502c4420a6d7f548502acf"
