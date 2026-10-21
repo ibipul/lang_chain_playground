@@ -21,6 +21,9 @@ my-assistant = {path = "packages/my-assistant", develop = true}
 [tool.poetry.group.dev.dependencies]
 # FIX THE BROKEN CLI
 langchain-cli = ">=0.0.37"
+# langchain-cli allows typer 0.9, which breaks on click 8.2+ and lacks rich; use a current one
+typer = "^0.20.0"
+pytest = "^9.0.1"
 
 [build-system]
 requires = ["poetry-core"]

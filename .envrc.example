@@ -1,0 +1,16 @@
+# direnv setup for this repo. ./run.sh --install copies this file to .envrc.
+# .envrc is gitignored: keep it that way. Keys go in .env (also gitignored), never here.
+#
+# When you cd into the repo (or my-language/), this:
+#   - loads the keys from .env (OPENAI_API_KEY, optional LANGSMITH_*)
+#   - puts the project's Poetry (.poetry) and venv (.venv) on PATH, so python, poetry,
+#     langchain and pytest are the project's own
+#   - points Poetry at .venv, so `poetry install` / `poetry add` in my-language install there
+dotenv_if_exists .env
+PATH_add .poetry/bin
+PATH_add .venv/bin
+export VIRTUAL_ENV="$PWD/.venv"
+export POETRY_VIRTUALENVS_CREATE=false
+
+[ -f .env ] || log_status "no .env yet: cp .env.example .env and add your OpenAI API key"
+[ -x .venv/bin/python ] || log_status "no .venv yet: run ./run.sh --install"

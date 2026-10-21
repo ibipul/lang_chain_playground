@@ -3,18 +3,29 @@
 # Sets up Python and Poetry, installs dependencies, checks the OpenAI key, starts the server.
 # Usage: ./run.sh                 (opens http://localhost:8000/assistant/playground, or the next free port)
 #        PORT=9000 ./run.sh       (use exactly this port)
+#        ./run.sh --install       (developer setup: dev tools, my-app's own venv, direnv; doesn't start the server)
 set -uo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
 POETRY_VERSION=2.2.1
 
+INSTALL=""
+case "${1:-}" in
+  "") ;;
+  --install) INSTALL=1 ;;
+  *) echo "Usage: ./run.sh [--install]"; exit 1 ;;
+esac
+STEPS=5; [ -n "$INSTALL" ] && STEPS=4
+
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[33m!\033[0m %s\n' "$*"; }
 die()  { printf '\n  \033[31m✗ %s\033[0m\n\n' "$*" >&2; exit 1; }
+# Yes/no question; answers "no" when there's no terminal to ask in.
+ask()  { [ -t 0 ] || return 1; printf '  %s [y/N] ' "$1"; read -r reply; [[ "$reply" =~ ^[Yy] ]]; }
 
 # ---------------------------------------------------------------- 1. Python
-say "[1/5] Checking Python"
+say "[1/$STEPS] Checking Python"
 PY=""
 for candidate in "${PYTHON:-}" python3 python3.13 python3.12 python3.11; do
   [ -n "$candidate" ] || continue
@@ -27,7 +38,7 @@ ok "Using $("$PY" --version 2>&1)"
 
 # ---------------------------------------------------------------- 2. Dependencies
 # Poetry lives in its own venv (.poetry) so its packages never clash with the app's (.venv).
-say "[2/5] Setting up dependencies"
+say "[2/$STEPS] Setting up dependencies"
 if [ ! -x .poetry/bin/poetry ]; then
   echo "  Installing Poetry $POETRY_VERSION into .poetry ..."
   { "$PY" -m venv .poetry && .poetry/bin/python -m pip install --disable-pip-version-check -q "poetry==$POETRY_VERSION"; } \
@@ -50,9 +61,72 @@ else
   ok "Packages already installed (skipping)"
 fi
 
+if [ -n "$INSTALL" ]; then
+  # Dev tools (langchain-cli, pytest) for my-language, then my-app in its own venv:
+  # my-app pins LangChain 0.2, which can't share a venv with my-language's LangChain 1.x.
+  echo "  Installing dev tools for my-language ..."
+  (cd my-language && VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false \
+    "$ROOT/.poetry/bin/poetry" install --no-interaction) \
+    || die "Dev tool install failed (see Poetry's message above). Run ./run.sh --install again."
+  ok "my-language: packages and dev tools in .venv"
+
+  say "[3/$STEPS] Setting up my-app (its own venv: my-app/.venv)"
+  (cd my-app && unset VIRTUAL_ENV && POETRY_VIRTUALENVS_IN_PROJECT=true \
+    "$ROOT/.poetry/bin/poetry" env use "$(command -v "$PY")" >/dev/null && \
+    POETRY_VIRTUALENVS_IN_PROJECT=true "$ROOT/.poetry/bin/poetry" install --no-interaction) \
+    || die "my-app install failed (see Poetry's message above). Delete my-app/.venv and run ./run.sh --install again."
+  ok "my-app: packages in my-app/.venv"
+
+  # ---------------------------------------------------------------- direnv
+  say "[4/$STEPS] Setting up direnv"
+  if ! command -v direnv >/dev/null 2>&1; then
+    if command -v brew >/dev/null 2>&1 && ask "direnv isn't installed. Install it with Homebrew?"; then
+      brew install direnv || die "brew install direnv failed (see above)."
+    else
+      warn "direnv isn't installed. Get it from https://direnv.net/docs/installation.html and run ./run.sh --install again."
+    fi
+  fi
+  if command -v direnv >/dev/null 2>&1; then
+    ok "direnv $(direnv version) installed"
+    SH="$(basename "${SHELL:-}")"
+    case "$SH" in
+      zsh)  RC="$HOME/.zshrc" ;;
+      bash) RC="$HOME/.bashrc" ;;
+      *)    RC="" ;;
+    esac
+    HOOK="eval \"\$(direnv hook $SH)\""
+    if [ -z "$RC" ]; then
+      warn "Add direnv's hook for your shell ($SH) by hand: https://direnv.net/docs/hook.html"
+    elif grep -q 'direnv hook' "$RC" 2>/dev/null; then
+      ok "Shell hook already in $RC"
+    elif ask "Add direnv's shell hook to $RC?"; then
+      printf '\n# direnv: load .envrc files when you cd into a folder\n%s\n' "$HOOK" >> "$RC"
+      ok "Added to $RC: $HOOK"
+      warn "Open a new terminal (or run: exec $SH) so the hook takes effect."
+    else
+      warn "Add this line to $RC yourself:  $HOOK"
+    fi
+    for f in .envrc my-app/.envrc; do
+      if [ -f "$f" ]; then
+        ok "$f already exists (left as is)"
+      else
+        cp "$f.example" "$f" && ok "Created $f from $f.example"
+      fi
+    done
+    direnv allow "$ROOT" && direnv allow "$ROOT/my-app" && ok "Allowed .envrc and my-app/.envrc"
+  fi
+
+  [ -f .env ] || warn "No .env yet: cp .env.example .env and add your OpenAI API key."
+  printf '\n  \033[1;32m●  Developer setup done.\033[0m\n'
+  echo "     cd into this folder (or my-language/) and the project venv, Poetry and your .env keys load automatically."
+  echo "     Start the demo with ./run.sh, or by hand: cd my-language && langchain serve"
+  echo
+  exit 0
+fi
+
 # ---------------------------------------------------------------- 3. API key
 # The assistant embeds its George Orwell notes with OpenAI when the server starts, so a working key is required.
-say "[3/5] Checking the OpenAI API key"
+say "[3/$STEPS] Checking the OpenAI API key"
 [ -f .env ] || die "Missing .env. Copy .env.example to .env and add your OpenAI API key."
 set -a; . ./.env; set +a
 KEY="${OPENAI_API_KEY:-}"
@@ -67,7 +141,7 @@ esac
 [ "${LANGSMITH_TRACING:-}" = "true" ] && ok "LangSmith tracing on (project: ${LANGSMITH_PROJECT:-default})"
 
 # ---------------------------------------------------------------- 4. Port
-say "[4/5] Finding a port"
+say "[4/$STEPS] Finding a port"
 port_free() { .venv/bin/python -c 'import socket,sys; s=socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind(("127.0.0.1", int(sys.argv[1])))' "$1" 2>/dev/null; }
 is_this_app() { curl -s --max-time 2 "http://127.0.0.1:$1/assistant/input_schema" 2>/dev/null | grep -q '"personality"'; }
 who_has() { command -v lsof >/dev/null && lsof -nP -iTCP:"$1" -sTCP:LISTEN 2>/dev/null | awk 'NR==2 {print $1" (PID "$2")"}'; }
@@ -102,7 +176,7 @@ fi
 ok "Using port $PORT"
 
 # ---------------------------------------------------------------- 5. Server
-say "[5/5] Starting the LangServe server"
+say "[5/$STEPS] Starting the LangServe server"
 (cd my-language && exec "$ROOT/.venv/bin/python" -m uvicorn app.server:app --host 127.0.0.1 --port "$PORT" --log-level warning) &
 SERVER_PID=$!
 trap 'echo; echo "  Stopping..."; kill $SERVER_PID 2>/dev/null; wait $SERVER_PID 2>/dev/null; exit 0' INT TERM

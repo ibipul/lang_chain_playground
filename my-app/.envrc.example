@@ -1,0 +1,12 @@
+# direnv setup for my-app. ./run.sh --install copies this file to my-app/.envrc.
+# .envrc is gitignored: keep it that way. Keys go in ../.env (also gitignored), never here.
+#
+# my-app pins LangChain 0.2, which can't share a venv with my-language's LangChain 1.x,
+# so it has its own venv in my-app/.venv. Inside my-app/ this replaces the repo-level .envrc.
+dotenv_if_exists ../.env
+PATH_add ../.poetry/bin
+PATH_add .venv/bin
+export VIRTUAL_ENV="$PWD/.venv"
+export POETRY_VIRTUALENVS_IN_PROJECT=true
+
+[ -x .venv/bin/python ] || log_status "no my-app/.venv yet: run ../run.sh --install"

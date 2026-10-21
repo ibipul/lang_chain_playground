@@ -62,7 +62,7 @@ Other ways to use it while it runs:
 
 </details>
 
-The sections below describe the two sub-projects and the manual setup with Poetry.
+The sections below describe the two sub-projects, and [Develop with direnv](#develop-with-direnv) covers working on the code.
 
 Requirements:
 ```
@@ -111,34 +111,85 @@ Oh, how astute of you to notice! Indeed, it feels as though the very world consp
 ```
 
 
-### Develop with a virtual environment
- - Switch into top-level directory
- - python3 -m venv .venv (create a venv)
- - add export PIP_INDEX_URL=https://pypi.org/simple/ to the end of .venv/bin/activate
- - add export PIP_EXTRA_INDEX_URL="" to the end of .venv/bin/activate
- - activate venv: source .venv/bin/activate
- - Then switch to `my-app` directory and do `poetry install`
- - Similarly switch to `my-language` directory and do a `poetry install`
+## Develop with direnv
 
-### Packages to have in venv
- - homebrew install envdir
- - You can use envdir to load secrects like API_KEYS in .envrc
- - add `.venv`, `.envrc` in `.gitignore` to ensure not uploading your open AI keys to public
- - pip install requests
- - you will need poetry
+`./run.sh` is all you need to try the demo. This section is for working on the code: editing the chains, running tests, adding packages, or starting the server by hand with `langchain serve`.
 
-### Installation & troubleshooting
- - Create your virtual env inside the main cloned directory activate it
- - update your langchan/langsmith API_KEYS in .envrc (with apt gitignore)
-   - you need to set `direnv allow` when the system prompts you.
- - navigate to `my-language/packages/my-assistant`
-   - Do a `poetry lock`, `poetry install`
- - Navigate back out to `../..` to `my-language`
-   - do another `poetry lock`, and then `poetry install`
- - From `/my-language` launch with `langchain serve`
-   - If you might face random errors at `langchain serve` start
-   - `pip install --upgrade typer click`, apparently this is because of some issue with typer.
-  
-Pretty straight forward python dependency debugging
+[direnv](https://direnv.net/) loads a folder's settings when you `cd` into it and unloads them when you leave. Here it loads your keys from `.env`, puts the project's own `python`, `poetry`, `langchain` and `pytest` first on your PATH, and points Poetry at the project venv. You never run `source .venv/bin/activate` or export keys by hand.
 
- 
+### One-time setup
+
+```bash
+cp .env.example .env        # then add your OPENAI_API_KEY (see Quick start)
+./run.sh --install
+```
+
+`./run.sh --install` sets everything up and exits without starting the server:
+
+1. Installs Poetry into `.poetry`, and `my-language` plus its dev tools (`langchain-cli`, `pytest`) into `.venv`.
+2. Installs `my-app` into its own venv, `my-app/.venv`. It pins LangChain 0.2, which can't share a venv with `my-language`'s LangChain 1.x.
+3. Sets up direnv:
+   - If direnv is missing, offers to install it with Homebrew (otherwise see https://direnv.net/docs/installation.html).
+   - Offers to add direnv's hook line to `~/.zshrc` or `~/.bashrc`. Nothing is changed unless you answer `y`.
+   - Copies `.envrc.example` to `.envrc` and `my-app/.envrc.example` to `my-app/.envrc` (existing files are left alone), then runs `direnv allow` on both.
+
+Open a new terminal afterwards so the shell hook takes effect, then `cd` into the repo. You should see `direnv: loading .../.envrc`.
+
+### What loads where
+
+| You're in | Venv on PATH | LangChain | `poetry install` goes to |
+|---|---|---|---|
+| repo root, `my-language/`, `my-language/packages/my-assistant/` | `.venv` | 1.1.0 | `.venv` |
+| `my-app/` | `my-app/.venv` | 0.2.17 | `my-app/.venv` |
+
+Your keys from `.env` (`OPENAI_API_KEY`, optional `LANGSMITH_*`) are loaded in all of them.
+
+### Everyday commands
+
+From the repo root:
+
+```bash
+cd my-language && langchain serve           # http://127.0.0.1:8000/assistant/playground/  (Ctrl+C to stop)
+cd my-language/packages/my-assistant && pytest   # calls OpenAI once with the Mark Anthony question
+cd my-app && pytest                         # the pirate chain, in its own venv
+```
+
+### Changing dependencies
+
+- **my-language** (the LangServe app): `cd my-language && poetry add <package>`
+- **my-assistant** (the chain the app serves) has its own `pyproject.toml` and lock, but installs into the shared `.venv` through `my-language`:
+  ```bash
+  cd my-language/packages/my-assistant && poetry add --lock <package>   # updates its lock only
+  cd ../.. && poetry lock && poetry install                             # back in my-language
+  ```
+  Don't run `poetry install` inside `my-assistant`: it would install that package's own lock (older FastAPI, newer Uvicorn) into the shared `.venv`.
+- **my-app**: `cd my-app && poetry add <package>`
+
+`./run.sh` reinstalls packages by itself whenever `my-language/poetry.lock` changes.
+
+### Keys and `.envrc` stay out of git
+
+`.env` and `.envrc` (including `my-app/.envrc`) are in `.gitignore` and must never be committed. Only the templates are tracked: `.env.example`, `.envrc.example`, `my-app/.envrc.example`. None of them hold keys. Put keys only in `.env`, never in `.envrc`.
+
+To change direnv settings for yourself, edit your `.envrc` and run `direnv allow` again. direnv blocks a changed `.envrc` until you approve it. To change them for everyone, edit the `.example` template and commit that.
+
+### Without direnv
+
+Do by hand what `.envrc` does, in each new terminal:
+
+```bash
+source .venv/bin/activate
+set -a; . ./.env; set +a
+export PATH="$PWD/.poetry/bin:$PATH" POETRY_VIRTUALENVS_CREATE=false
+```
+
+For `my-app`, use `source my-app/.venv/bin/activate` instead of the first line, and skip `POETRY_VIRTUALENVS_CREATE=false`.
+
+### Troubleshooting
+
+| You see | What to do |
+|---|---|
+| `direnv: error .envrc is blocked` | Run `direnv allow` in that folder. |
+| Nothing loads when you `cd` in | The shell hook is missing. Add `eval "$(direnv hook zsh)"` (or `bash`) to your shell config and open a new terminal. |
+| `poetry: command not found` / `no .venv yet` | Run `./run.sh --install`. |
+| `OPENAI_API_KEY` not set | Check `.env` exists in the repo root and has the key, then `direnv reload`. |
