@@ -1,5 +1,6 @@
 # Hands-on  langchain
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![LangChain 1.4.6](https://img.shields.io/badge/LangChain-1.4.6-1C3C3C?logo=langchain&logoColor=white)](https://python.langchain.com/)
 [![LangServe 0.3.3](https://img.shields.io/badge/LangServe-0.3.3-1C3C3C?logo=langchain&logoColor=white)](https://github.com/langchain-ai/langserve)
@@ -12,9 +13,13 @@
 [![Poetry](https://img.shields.io/badge/Poetry-dependency%20management-60A5FA?logo=poetry&logoColor=white)](https://python-poetry.org/)
 [![Docker](https://img.shields.io/badge/Docker-python%3A3.11--slim-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
+A LangServe chat assistant that role-plays any character from a book or play (Mark Anthony from *Julius Caesar* by default), with George Orwell facts as extra context and a mood tag on every reply. One command sets it up and opens this playground:
+
+<img src="docs/playground.png" alt="LangServe playground: Mark Anthony answers a question in character, ending with [Mood: Frustrated]" width="560">
+
 ## Quick start
 
-Runs the **my-language** demo: a LangServe REST API with a chat playground where you talk to a character from a book or play (Mark Anthony from *Julius Caesar* by default), backed by a small George Orwell knowledge base.
+Runs the **my-language** demo shown above: a LangServe REST API with this chat playground.
 
 Needs Python 3.11+, internet access and an OpenAI API key. You don't need Poetry installed; `run.sh` sets it up.
 
