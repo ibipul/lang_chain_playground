@@ -1634,6 +1634,7 @@ langchain-core = "^1.6.12"
 langchain-openai = "^1.7.2"
 langserve = "^0.3.3"
 langsmith = "^0.14.11"
+python-dotenv = "^1.2.4"
 
 [package.source]
 type = "directory"
@@ -3812,4 +3813,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "d0ce2bd76d3c10d64b3fd4644922dd919d9b6a90fdb5a679873f319ec485455a"
+content-hash = "f5ed75ce5f275db41f4aaef5460d800a299f48e80bd0d02b4712ec285187272d"

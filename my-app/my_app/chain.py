@@ -1,3 +1,9 @@
+from dotenv import find_dotenv, load_dotenv
+
+# Load OPENAI_API_KEY (and optional LANGSMITH_*) from the repo's .env, found by searching up from this file.
+# Variables already set in the environment win.
+load_dotenv(find_dotenv())
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field

@@ -3,7 +3,7 @@
 # Sets up Python and Poetry, installs dependencies, checks the OpenAI key, starts the server.
 # Usage: ./run.sh                 (opens http://localhost:8000/assistant/playground, or the next free port)
 #        PORT=9000 ./run.sh       (use exactly this port)
-#        ./run.sh --install       (developer setup: dev tools, my-app, direnv; doesn't start the server)
+#        ./run.sh --install       (developer setup: dev tools and my-app in .venv; doesn't start the server)
 set -uo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
@@ -15,14 +15,12 @@ case "${1:-}" in
   --install) INSTALL=1 ;;
   *) echo "Usage: ./run.sh [--install]"; exit 1 ;;
 esac
-STEPS=5; [ -n "$INSTALL" ] && STEPS=4
+STEPS=5; [ -n "$INSTALL" ] && STEPS=3
 
 say()  { printf '\n\033[1m%s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
 warn() { printf '  \033[33m!\033[0m %s\n' "$*"; }
 die()  { printf '\n  \033[31m✗ %s\033[0m\n\n' "$*" >&2; exit 1; }
-# Yes/no question; answers "no" when there's no terminal to ask in.
-ask()  { [ -t 0 ] || return 1; printf '  %s [y/N] ' "$1"; read -r reply; [[ "$reply" =~ ^[Yy] ]]; }
 
 # ---------------------------------------------------------------- 1. Python
 say "[1/$STEPS] Checking Python"
@@ -86,49 +84,13 @@ if bad:
     sys.exit(1)
 print(f"  \033[32m✓\033[0m Lock files agree (LangChain {v['my-language']['langchain']}, langchain-core {v['my-language']['langchain-core']})")
 PYEOF
-  [ -f my-app/.envrc ] && warn "my-app/.envrc is no longer needed (my-app now uses the shared .venv). Delete it and my-app/.venv."
-
-  # ---------------------------------------------------------------- direnv
-  say "[4/$STEPS] Setting up direnv"
-  if ! command -v direnv >/dev/null 2>&1; then
-    if command -v brew >/dev/null 2>&1 && ask "direnv isn't installed. Install it with Homebrew?"; then
-      brew install direnv || die "brew install direnv failed (see above)."
-    else
-      warn "direnv isn't installed. Get it from https://direnv.net/docs/installation.html and run ./run.sh --install again."
-    fi
-  fi
-  if command -v direnv >/dev/null 2>&1; then
-    ok "direnv $(direnv version) installed"
-    SH="$(basename "${SHELL:-}")"
-    case "$SH" in
-      zsh)  RC="$HOME/.zshrc" ;;
-      bash) RC="$HOME/.bashrc" ;;
-      *)    RC="" ;;
-    esac
-    HOOK="eval \"\$(direnv hook $SH)\""
-    if [ -z "$RC" ]; then
-      warn "Add direnv's hook for your shell ($SH) by hand: https://direnv.net/docs/hook.html"
-    elif grep -q 'direnv hook' "$RC" 2>/dev/null; then
-      ok "Shell hook already in $RC"
-    elif ask "Add direnv's shell hook to $RC?"; then
-      printf '\n# direnv: load .envrc files when you cd into a folder\n%s\n' "$HOOK" >> "$RC"
-      ok "Added to $RC: $HOOK"
-      warn "Open a new terminal (or run: exec $SH) so the hook takes effect."
-    else
-      warn "Add this line to $RC yourself:  $HOOK"
-    fi
-    if [ -f .envrc ]; then
-      ok ".envrc already exists (left as is)"
-    else
-      cp .envrc.example .envrc && ok "Created .envrc from .envrc.example"
-    fi
-    direnv allow "$ROOT" && ok "Allowed .envrc"
-  fi
+  # Link the project's Poetry into .venv/bin, so `source .venv/bin/activate` puts poetry on PATH too.
+  ln -sf "$ROOT/.poetry/bin/poetry" .venv/bin/poetry && ok "poetry linked into .venv/bin"
 
   [ -f .env ] || warn "No .env yet: cp .env.example .env and add your OpenAI API key."
   printf '\n  \033[1;32m●  Developer setup done.\033[0m\n'
-  echo "     cd into this folder (or my-language/) and the project venv, Poetry and your .env keys load automatically."
-  echo "     Start the demo with ./run.sh, or by hand: cd my-language && langchain serve"
+  echo "     Activate the venv in each new terminal:  source .venv/bin/activate"
+  echo "     Then e.g.:  cd my-language && langchain serve    (keys are read from .env)"
   echo
   exit 0
 fi
