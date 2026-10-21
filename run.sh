@@ -3,7 +3,7 @@
 # Sets up Python and Poetry, installs dependencies, checks the OpenAI key, starts the server.
 # Usage: ./run.sh                 (opens http://localhost:8000/assistant/playground, or the next free port)
 #        PORT=9000 ./run.sh       (use exactly this port)
-#        ./run.sh --install       (developer setup: dev tools, my-app's own venv, direnv; doesn't start the server)
+#        ./run.sh --install       (developer setup: dev tools, my-app, direnv; doesn't start the server)
 set -uo pipefail
 cd "$(dirname "$0")"
 ROOT="$PWD"
@@ -62,20 +62,31 @@ else
 fi
 
 if [ -n "$INSTALL" ]; then
-  # Dev tools (langchain-cli, pytest) for my-language, then my-app in its own venv:
-  # my-app pins LangChain 0.2, which can't share a venv with my-language's LangChain 1.x.
+  # Dev tools (langchain-cli, pytest) for my-language, then my-app into the same .venv.
   echo "  Installing dev tools for my-language ..."
   (cd my-language && VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false \
     "$ROOT/.poetry/bin/poetry" install --no-interaction) \
     || die "Dev tool install failed (see Poetry's message above). Run ./run.sh --install again."
   ok "my-language: packages and dev tools in .venv"
 
-  say "[3/$STEPS] Setting up my-app (its own venv: my-app/.venv)"
-  (cd my-app && unset VIRTUAL_ENV && POETRY_VIRTUALENVS_IN_PROJECT=true \
-    "$ROOT/.poetry/bin/poetry" env use "$(command -v "$PY")" >/dev/null && \
-    POETRY_VIRTUALENVS_IN_PROJECT=true "$ROOT/.poetry/bin/poetry" install --no-interaction) \
-    || die "my-app install failed (see Poetry's message above). Delete my-app/.venv and run ./run.sh --install again."
-  ok "my-app: packages in my-app/.venv"
+  say "[3/$STEPS] Setting up my-app (same .venv) and checking versions match"
+  (cd my-app && VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false \
+    "$ROOT/.poetry/bin/poetry" install --no-interaction) \
+    || die "my-app install failed (see Poetry's message above). Run ./run.sh --install again."
+  ok "my-app: installed in .venv"
+  # All projects share one .venv, so their three lock files must agree on every package they have in common.
+  .venv/bin/python - <<'PYEOF' || warn "Lock files disagree (listed above). Run 'poetry lock --regenerate' in my-language/packages/my-assistant, my-app and my-language, then ./run.sh --install again."
+import tomllib, sys
+locks = {"my-language": "my-language/poetry.lock", "my-assistant": "my-language/packages/my-assistant/poetry.lock", "my-app": "my-app/poetry.lock"}
+v = {n: {p["name"]: p["version"] for p in tomllib.load(open(f, "rb"))["package"]} for n, f in locks.items()}
+bad = sorted({p for a in v for b in v for p in v[a].keys() & v[b].keys() if v[a][p] != v[b][p]})
+for p in bad:
+    print(f"  \033[33m!\033[0m {p}: " + ", ".join(f"{n} {v[n][p]}" for n in v if p in v[n]))
+if bad:
+    sys.exit(1)
+print(f"  \033[32m✓\033[0m Lock files agree (LangChain {v['my-language']['langchain']}, langchain-core {v['my-language']['langchain-core']})")
+PYEOF
+  [ -f my-app/.envrc ] && warn "my-app/.envrc is no longer needed (my-app now uses the shared .venv). Delete it and my-app/.venv."
 
   # ---------------------------------------------------------------- direnv
   say "[4/$STEPS] Setting up direnv"
@@ -106,14 +117,12 @@ if [ -n "$INSTALL" ]; then
     else
       warn "Add this line to $RC yourself:  $HOOK"
     fi
-    for f in .envrc my-app/.envrc; do
-      if [ -f "$f" ]; then
-        ok "$f already exists (left as is)"
-      else
-        cp "$f.example" "$f" && ok "Created $f from $f.example"
-      fi
-    done
-    direnv allow "$ROOT" && direnv allow "$ROOT/my-app" && ok "Allowed .envrc and my-app/.envrc"
+    if [ -f .envrc ]; then
+      ok ".envrc already exists (left as is)"
+    else
+      cp .envrc.example .envrc && ok "Created .envrc from .envrc.example"
+    fi
+    direnv allow "$ROOT" && ok "Allowed .envrc"
   fi
 
   [ -f .env ] || warn "No .env yet: cp .env.example .env and add your OpenAI API key."

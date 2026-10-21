@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 # --- Define the Pydantic Input Schema ---
 # The field name 'text' MUST match the variable name in your prompt template: {text}

@@ -9,10 +9,15 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-uvicorn = "^0.23.2"
-langserve = {extras = ["server"], version = "^0.3.0"} 
-pydantic = "^2.0" 
+python = ">=3.11,<4.0"
+# Shared LangChain stack: keep this block identical in my-app, my-assistant and my-language
+langchain-core = "^1.6.12"
+langchain = "^1.4.6"
+langchain-openai = "^1.7.2"
+langsmith = "^0.14.11"
+langserve = {extras = ["server"], version = "^0.3.3"}
+uvicorn = "^0.54.0"
+pydantic = "^2.0"
 
 # Local package, relative to this folder
 my-assistant = {path = "packages/my-assistant", develop = true}
