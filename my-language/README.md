@@ -29,7 +29,7 @@ my-language/
     └── my-assistant/      # one folder per chain
 ```
 
-The packages aren't installed from here: the repo-root `pyproject.toml` lists every dependency and installs each chain from its folder (see the [main README](../README.md#development)).
+Each package is a normal Python package with its own `pyproject.toml` listing what it imports. They aren't installed from here: the repo-root `pyproject.toml` installs each one from its folder, and the single root `poetry.lock` picks the versions (see [Dependencies](../README.md#dependencies) in the main README).
 
 **Run it:** `./run.sh` from the repo root, or `cd my-language && langchain serve` with the venv active. `langchain serve` reloads when you save a file in this folder, including anything under `packages/`.
 
@@ -44,7 +44,7 @@ cp -R my-app my-language/packages/my-poet
 mv my-language/packages/my-poet/my_app my-language/packages/my-poet/my_poet
 ```
 
-In `my-language/packages/my-poet/pyproject.toml`, change `my-app` to `my-poet` and `my_app` to `my_poet` (in `name`, `packages` and `export_module`), and update `description`. In its `tests/test_chain.py`, change the import to `from my_poet.chain import chain`, and give the test an input that matches your chain. Rewrite its `README.md` to describe the new chain.
+In `my-language/packages/my-poet/pyproject.toml`, change `my-app` to `my-poet` and `my_app` to `my_poet` (in `name`, `packages` and `export_module`), and update `description`. Its `dependencies` list should name every library your chain imports, as wide ranges like the ones already there; the copied list fits the example below as it is. In its `tests/test_chain.py`, change the import to `from my_poet.chain import chain`, and give the test an input that matches your chain. Rewrite its `README.md` to describe the new chain.
 
 **2. Write the chain** in `my-language/packages/my-poet/my_poet/chain.py`. Keep the `.env` lines at the top, and end with a variable named `chain`. Declaring the input with `.with_types(...)` gives the playground a proper form:
 
@@ -74,7 +74,7 @@ chain = (_prompt | ChatOpenAI(model="gpt-3.5-turbo", temperature=0.7) | StrOutpu
 poetry add --editable ./my-language/packages/my-poet
 ```
 
-That adds `my-poet = {path = "my-language/packages/my-poet", develop = true}` to the root `pyproject.toml`, updates `poetry.lock` and installs it. If the chain needs a library the repo doesn't have yet, `poetry add <package>` it here too.
+That adds `my-poet = {path = "my-language/packages/my-poet", develop = true}` to the root `pyproject.toml`, reads the package's `dependencies`, updates `poetry.lock` and installs it all. If you add a library to the chain's list later, run `poetry lock && poetry install` from the repo root (`./run.sh` stops and reminds you if you forget).
 
 **4. Serve it.** In `my-language/app/server.py`, import it and add a route next to the existing one:
 
@@ -92,7 +92,7 @@ For a chain you only want to run, not serve (like `my-app`), skip step 4. It can
 
 | File | Change |
 |---|---|
-| `<chain folder>/pyproject.toml` | Package name, `packages` include, `export_module`, description. No dependencies. |
+| `<chain folder>/pyproject.toml` | Package name, `packages` include, `export_module`, description, and `dependencies`: every library the chain imports, as wide ranges. |
 | `<chain folder>/<module>/chain.py` | Your chain, ending in a variable named `chain`. |
 | `<chain folder>/tests/test_chain.py` | Import path and test input. |
 | `<chain folder>/README.md` | What the chain does (it starts as a copy of `my-app`'s). |
@@ -103,4 +103,11 @@ For a chain you only want to run, not serve (like `my-app`), skip step 4. It can
 
 ### Reusing someone else's template
 
- copy its folder the same way, move its dependencies into the root `pyproject.toml`, and update it to LangChain 1.x (for example, `langchain_core.pydantic_v1` becomes `pydantic`). Don't use `langchain app add`. It downloads from LangChain's old template collection, which was removed from LangChain's main branch and pins LangChain 0.1. It also writes the dependency into the wrong `pyproject.toml` for this layout.
+ a package with its own `pyproject.toml` fits in the same way as your own:
+
+1. Copy its folder into `my-language/packages/` and delete any `poetry.lock` inside it (this repo has one lock, at the root).
+2. Make sure its `pyproject.toml` lists its dependencies. Older templates list them under `[tool.poetry.dependencies]`, which works too. Update them, and its code, to LangChain 1.x if needed (for example, `langchain_core.pydantic_v1` becomes `pydantic`).
+3. Register it: `poetry add --editable ./my-language/packages/<folder>`. If its versions clash with the repo's, this stops and names the library; widen its range or update it.
+4. Serve it with `add_routes`, as in step 4 above.
+
+Don't use `langchain app add`. It downloads from LangChain's old template collection, which was removed from LangChain's main branch and pins LangChain 0.1. It also writes the dependency into the wrong `pyproject.toml` for this layout.

@@ -1,26 +1,27 @@
-# The only file in this repo that lists dependencies. The poetry.lock next to it pins every
-# version, and everything installs into one venv (.venv). See "Development" in README.md.
+# The repo's root project. It sets the shared versions, the server and dev tools, and installs
+# every chain package from its folder. The poetry.lock next to it is the only lock in the repo:
+# it picks one exact version of everything, installed into one venv (.venv).
+# See "Dependencies" in README.md.
 [tool.poetry]
 # The root only holds dependencies; it isn't a package itself.
 package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-# LangChain stack
+# Shared versions: the LangChain stack every chain builds on. Chain packages may ask for
+# wide ranges of these; the versions here are what the whole repo actually uses.
 langchain-core = "^1.6.12"
 langchain = "^1.4.6"
 langchain-openai = "^1.7.2"
-langchain-community = "^0.4.2"   # FAISS vector store, used by my-assistant
 langsmith = "^0.14.11"
-# Web server (my-language)
+pydantic = "^2.0"
+python-dotenv = "^1.2.4"
+# Web server (my-language/app/server.py)
 langserve = {extras = ["server"], version = "^0.3.3"}
 uvicorn = "^0.54.0"
-pydantic = "^2.0"
-# Used by the chains
-faiss-cpu = "^1.12.0"
-python-dotenv = "^1.2.4"
 
-# This repo's own chains, installed from their folders in editable mode
+# Chain packages, installed from their folders in editable mode. Their own
+# pyproject.toml lists anything else they need (e.g. FAISS for my-assistant).
 my-assistant = {path = "my-language/packages/my-assistant", develop = true}
 my-app = {path = "my-app", develop = true}
 

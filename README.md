@@ -64,7 +64,7 @@ Other ways to use it while it runs:
 
 ## How the repo fits together
 
-The repo holds three small Python projects. They share one list of dependencies and run from one virtual environment, `.venv`, at the repo root.
+The repo holds three small Python projects. They share one set of locked versions and run from one virtual environment, `.venv`, at the repo root.
 
 - **`my-language/`** ([README](my-language/README.md)): the web server. It's a [LangServe](https://github.com/langchain-ai/langserve) app (FastAPI underneath) that publishes the assistant under `/assistant`. This is what `./run.sh` starts. Once it's running you get:
   - **http://localhost:8000/assistant/playground/**: an interactive web interface for the assistant. Type a question, optionally change the character, title and personality, and read the in-character reply with its mood tag. `./run.sh` opens this page for you.
@@ -103,7 +103,7 @@ flowchart LR
     E -.-> MP
 ```
 
-All dependencies are listed in **one `pyproject.toml` at the repo root**, and **one `poetry.lock`** next to it pins every version (managed with [Poetry](https://python-poetry.org/)). The root file also installs `my-assistant` and `my-app` from their folders, in editable mode: Python uses the code in the folders directly, so your edits apply without reinstalling. Those two folders keep a small `pyproject.toml` that only names the package, with no dependencies.
+Each chain (`my-assistant`, `my-app`) is a normal Python package with its own `pyproject.toml`, listing the libraries it imports. The **root `pyproject.toml`** sets the shared versions, adds the server and dev tools, and installs every chain from its folder in editable mode: Python uses the code in the folders directly, so your edits apply without reinstalling. **One `poetry.lock`**, at the root, picks one exact version of everything (managed with [Poetry](https://python-poetry.org/)). See [Dependencies](#dependencies) for the rules that keep it consistent.
 
 ## Project notes
 
@@ -177,19 +177,36 @@ cd my-app && pytest                              # calls OpenAI once with the pi
 
 ### Dependencies
 
-Everything is in the root `pyproject.toml`; the locked versions are in the root `poetry.lock`. Main versions today: LangChain 1.4.6, langchain-core 1.6.12, langchain-openai 1.7.2, langchain-community 0.4.2, LangSmith 0.14.11, LangServe 0.3.3, FastAPI 0.156.6, Uvicorn 0.54.0, Pydantic 2.14.1.
+The repo is laid out like a standard Python monorepo:
 
-Run Poetry from the repo root, with the venv active:
-
-| To | Run |
+| File | Says |
 |---|---|
-| Add a package | `poetry add <package>` |
-| Add a dev-only tool | `poetry add --group dev <package>` |
-| Remove a package | `poetry remove <package>` |
-| Upgrade within the allowed versions | `poetry update` (or `poetry update <package>`) |
-| Allow a newer major/minor version | Edit its line in `pyproject.toml`, then `poetry lock && poetry install` |
+| Root `pyproject.toml` | The shared versions (LangChain stack, Pydantic), the web server, the dev tools, and the list of chain packages to install from their folders |
+| Each chain's `pyproject.toml` (e.g. `my-language/packages/my-assistant/pyproject.toml`) | The package's name and the libraries it imports, as wide version ranges such as `langchain-core>=1.0,<2`, so the package could be installed in any project |
+| Root `poetry.lock` | The one exact version of every library, chosen to satisfy all of the above together |
 
-Commit `pyproject.toml` and `poetry.lock` together. Never add dependencies to the `pyproject.toml` inside `my-app/` or `my-assistant/`; those only name the package. `./run.sh` reinstalls by itself whenever `poetry.lock` changes, so after a `git pull` it picks up others' changes.
+Main versions today: LangChain 1.4.6, langchain-core 1.6.12, langchain-openai 1.7.2, langchain-community 0.4.2, LangSmith 0.14.11, LangServe 0.3.3, FastAPI 0.156.6, Uvicorn 0.54.0, Pydantic 2.14.1.
+
+**Three rules keep it consistent:**
+
+1. **One lock file, at the root.** A chain folder never gets its own `poetry.lock`. If it has one (for example in a package you copied in), Poetry ignores it; delete it.
+2. **Run Poetry only from the repo root.** Never `poetry install`, `poetry add` or `poetry lock` inside a chain folder; that would create a second lock.
+3. **Every chain is a normal package** with its own `pyproject.toml`, registered in the root with `poetry add --editable ./<folder>`.
+
+If two packages ask for versions that can't both be met, `poetry lock` stops with an error naming the library, instead of installing two versions. `./run.sh` checks rules 1 and 3 every time it runs: it warns about stray lock files, and stops if a chain's dependency list changed without re-locking (Poetry itself only notices changes to the root `pyproject.toml`).
+
+With the venv active, from the repo root:
+
+| To | Do |
+|---|---|
+| Add a library one chain imports | Add it to that chain's `dependencies` list (a wide range, e.g. `"httpx>=0.27,<1"`), then `poetry lock && poetry install` |
+| Add a library the server or several chains share | `poetry add <package>` (goes in the root `pyproject.toml`) |
+| Add a dev-only tool | `poetry add --group dev <package>` |
+| Remove a library | Delete it from the chain's list, or `poetry remove <package>` for the root; then `poetry lock && poetry install` |
+| Upgrade within the allowed versions | `poetry update` (or `poetry update <package>`) |
+| Move the shared stack to a newer version | Edit its line in the root `pyproject.toml`, then `poetry lock && poetry install`. Widen a chain's range only if the new version falls outside it. |
+
+Commit the changed `pyproject.toml` files and `poetry.lock` together. `./run.sh` reinstalls by itself whenever `poetry.lock` changes, so after a `git pull` it picks up others' changes.
 
 ### Add your own chain
 
@@ -217,4 +234,6 @@ Then open http://localhost:8080/assistant/playground/.
 | `poetry: command not found` / `langchain: command not found` | Activate the venv: `source .venv/bin/activate`. If `.venv` doesn't exist yet, run `./run.sh --install`. |
 | `OpenAIError: Missing credentials` | `.env` is missing or has no `OPENAI_API_KEY`. See the key box in Quick start. |
 | `ModuleNotFoundError` for your new chain | It isn't registered yet: `poetry add --editable ./<chain folder>` from the repo root. |
-| `pyproject.toml changed significantly since poetry.lock was last generated` | Someone edited `pyproject.toml` without re-locking. Run `poetry lock && poetry install`. |
+| `pyproject.toml changed significantly since poetry.lock was last generated` | Someone edited the root `pyproject.toml` without re-locking. Run `poetry lock && poetry install`. |
+| `poetry.lock is out of date` from `./run.sh` | A chain's `pyproject.toml` lists a library the lock doesn't have (the line above it names both). Run `.poetry/bin/poetry lock` from the repo root, then `./run.sh` again. |
+| `poetry lock` fails: `... depends on X (...), version solving failed` | Two packages ask for versions of `X` that can't both be met. Widen one package's range, or move the shared version in the root `pyproject.toml`. |

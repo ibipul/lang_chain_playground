@@ -1626,6 +1626,12 @@ groups = ["main"]
 files = []
 develop = true
 
+[package.dependencies]
+langchain-core = ">=1.0,<2"
+langchain-openai = ">=1.0,<2"
+pydantic = ">=2,<3"
+python-dotenv = ">=1,<2"
+
 [package.source]
 type = "directory"
 url = "my-app"
@@ -1639,6 +1645,14 @@ python-versions = ">=3.11"
 groups = ["main"]
 files = []
 develop = true
+
+[package.dependencies]
+faiss-cpu = ">=1.12,<2"
+langchain-community = ">=0.4,<0.5"
+langchain-core = ">=1.0,<2"
+langchain-openai = ">=1.0,<2"
+pydantic = ">=2,<3"
+python-dotenv = ">=1,<2"
 
 [package.source]
 type = "directory"
@@ -3817,4 +3831,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "d176a71fd929db443f8f0e8e18c23209be731709e7502c4420a6d7f548502acf"
+content-hash = "cf750f00df1ed9f4319d5af179af241d6ceadbee03846bd679518de35d4c1486"

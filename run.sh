@@ -46,7 +46,46 @@ if [ ! -x .venv/bin/python ]; then
   echo "  Creating a virtual environment in .venv ..."
   "$PY" -m venv .venv || die "Could not create the virtual environment. Delete the .venv folder and run ./run.sh again."
 fi
-# One pyproject.toml + poetry.lock at the repo root install everything into .venv.
+# The repo's dependency rules: one poetry.lock (at the root), and every chain package's own
+# dependency list already folded into it. Poetry only notices changes to the root pyproject.toml,
+# so this also checks each package's pyproject.toml against what the lock recorded for it.
+"$PY" - <<'PYEOF' || die "poetry.lock is out of date (see above). Re-lock from the repo root: .poetry/bin/poetry lock   then run ./run.sh again."
+import re, sys, tomllib
+from pathlib import Path
+
+def norm(name):
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+def parse(req):  # "faiss-cpu>=1.12,<2" -> ("faiss-cpu", ">=1.12,<2")
+    req = req.split(";")[0].strip()
+    m = re.match(r"([A-Za-z0-9][A-Za-z0-9._-]*)\s*(\[[^\]]*\])?\s*(.*)", req)
+    return norm(m.group(1)), m.group(3).replace(" ", "")
+
+for extra in sorted(p for p in Path(".").rglob("poetry.lock") if p != Path("poetry.lock") and not {".venv", ".poetry"} & set(p.parts)):
+    print(f"  \033[33m!\033[0m {extra} is ignored: this repo has one lock, at the root. Delete it.")
+
+stale = False
+for pkg in tomllib.load(open("poetry.lock", "rb"))["package"]:
+    src = pkg.get("source", {})
+    if src.get("type") != "directory":
+        continue
+    pyproject = Path(src["url"]) / "pyproject.toml"
+    meta = tomllib.load(open(pyproject, "rb"))
+    # Packages list dependencies either the standard way ([project]) or the older Poetry way.
+    declared = dict(parse(r) for r in meta.get("project", {}).get("dependencies", []))
+    for name, spec in meta.get("tool", {}).get("poetry", {}).get("dependencies", {}).items():
+        if norm(name) != "python":
+            declared[norm(name)] = (spec.get("version", "*") if isinstance(spec, dict) else spec).replace(" ", "")
+    locked = {norm(k): (v["version"] if isinstance(v, dict) else v).replace(" ", "") for k, v in pkg.get("dependencies", {}).items()}
+    if declared != locked:
+        stale = True
+        for name in sorted(declared.keys() | locked.keys()):
+            if declared.get(name) != locked.get(name):
+                print(f"  \033[31m✗\033[0m {pyproject}: {name} is {declared.get(name, 'removed')}, poetry.lock has {locked.get(name, 'nothing')}")
+sys.exit(1 if stale else 0)
+PYEOF
+
+# One poetry.lock at the repo root installs everything into .venv.
 poetry_install() { VIRTUAL_ENV="$ROOT/.venv" POETRY_VIRTUALENVS_CREATE=false "$ROOT/.poetry/bin/poetry" install --no-interaction "$@"; }
 if [ ! -f .venv/.deps-installed ] || [ poetry.lock -nt .venv/.deps-installed ]; then
   echo "  Installing packages (first run only; usually 1-3 minutes, longer on a slow network)."

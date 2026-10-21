@@ -8,7 +8,7 @@ It's where [`my-assistant`](../my-language/packages/my-assistant/README.md) came
 my-app/
 ├── my_app/chain.py        # the chain: prompt | ChatOpenAI, input {"text": "..."}
 ├── tests/test_chain.py    # calls the chain once with a greeting
-└── pyproject.toml         # package name only; dependencies live in the repo-root pyproject.toml
+└── pyproject.toml         # package name and the libraries it imports; installed by the repo-root pyproject.toml
 ```
 
 It's installed into the repo's `.venv` with everything else. Nothing serves it; run it through its test, with the venv active:
